@@ -2,6 +2,8 @@ package com.universe.android;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.Toast;
+
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -9,11 +11,17 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.universe.android.adapter.EventPreviewAdapter;
+import com.universe.android.manager.UserManager;
 import com.universe.android.model.Event;
 import java.util.ArrayList;
 import java.util.List;
+import android.widget.TextView;
 
 public class DashboardActivity extends AppCompatActivity {
+    private TextView pointsText;
+    private TextView levelText;
+    private TextView rankText;
+    private TextView sessionsText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,6 +29,11 @@ public class DashboardActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_dashboard);
 
+        // Initialize views
+        pointsText = findViewById(R.id.pointsText);
+        levelText = findViewById(R.id.levelText);
+        rankText = findViewById(R.id.rankText);
+        sessionsText = findViewById(R.id.sessionsText);
         MaterialButton startSessionButton = findViewById(R.id.startSessionButton);
         BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
         RecyclerView eventsPreviewList = findViewById(R.id.eventsPreviewList);
@@ -35,6 +48,11 @@ public class DashboardActivity extends AppCompatActivity {
 
         eventsPreviewList.setAdapter(eventAdapter);
 
+
+        // Load user data
+        loadUserData();
+
+        // Load events
         loadSampleEvents(eventAdapter);
 
         startSessionButton.setOnClickListener(v -> {
@@ -82,5 +100,27 @@ public class DashboardActivity extends AppCompatActivity {
                 R.drawable.ic_launcher_background
         ));
         adapter.setEvents(events);
+    }
+
+    private void loadUserData() {
+        UserManager.getInstance().getCurrentUserData()
+                .addOnSuccessListener(user -> {
+                    if (user != null) {
+                        pointsText.setText("Points: " + user.getPoints());
+                        levelText.setText("Level: " + calculateLevel(user.getPoints()));
+                        sessionsText.setText("Sessions: " + (user.getTotalStudyTime() / 60));
+
+                        // You might want to implement rank calculation later
+                        rankText.setText("Rank: #-");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to load user data", Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private int calculateLevel(int points) {
+        // TODO
+        return Math.max(1, points / 1000 + 1);
     }
 }

@@ -54,6 +54,7 @@
                         android:rowCount="2">
 
                         <TextView
+                            android:id="@+id/pointsText"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_columnWeight="1"
@@ -61,6 +62,7 @@
                             android:text="Points: 0" />
 
                         <TextView
+                            android:id="@+id/levelText"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_columnWeight="1"
@@ -68,6 +70,7 @@
                             android:text="Level: 1" />
 
                         <TextView
+                            android:id="@+id/rankText"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_columnWeight="1"
@@ -75,6 +78,7 @@
                             android:text="Rank: #0" />
 
                         <TextView
+                            android:id="@+id/sessionsText"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_columnWeight="1"

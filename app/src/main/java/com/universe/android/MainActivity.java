@@ -6,10 +6,14 @@ import android.os.Bundle;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.util.Log;
+import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.universe.android.adapter.OrganisationAdapter;
+import com.universe.android.manager.OrganisationManager;
 import com.universe.android.model.Organisation;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +22,8 @@ public class MainActivity extends AppCompatActivity implements OrganisationAdapt
 
     private RecyclerView recyclerView;
     private OrganisationAdapter adapter;
+
+    private ProgressBar loadingSpinner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,8 +36,11 @@ public class MainActivity extends AppCompatActivity implements OrganisationAdapt
         adapter = new OrganisationAdapter(this);
         recyclerView.setAdapter(adapter);
 
+        loadingSpinner = findViewById(R.id.loadingSpinner);
+
         // Load sample data
-        loadSampleOrganisations();
+        // loadSampleOrganisations();
+        loadOrganisations();
     }
 
     private void loadSampleOrganisations() {
@@ -43,10 +52,40 @@ public class MainActivity extends AppCompatActivity implements OrganisationAdapt
         adapter.setOrganisations(organisations);
     }
 
+
     @Override
     public void onOrganisationClick(Organisation organisation) {
+        getSharedPreferences("universe", MODE_PRIVATE)
+                .edit()
+                .putString("selected_org_id", organisation.getId())
+                .apply();
+
         Intent intent = new Intent(this, EmailVerificationActivity.class);
         intent.putExtra(EmailVerificationActivity.EXTRA_ORGANISATION_NAME, organisation.getName());
+        intent.putExtra(EmailVerificationActivity.EXTRA_ORGANISATION_ID, organisation.getId());
         startActivity(intent);
+    }
+
+
+    private void loadOrganisations() {
+        Log.d("MainActivity", "Loading organisations...");
+
+        OrganisationManager.getInstance()
+                .getAllOrganisations()
+                .addOnSuccessListener(querySnapshot -> {
+                    ArrayList<Organisation> organisations = new ArrayList<>();
+                    querySnapshot.forEach(doc -> {
+                        Organisation org = doc.toObject(Organisation.class);
+                        Log.d("MainActivity", "Loaded org: " + org.getId() + ", domains: " + org.getDomains());
+                        org.setLogoResource(R.drawable.ic_launcher_foreground);
+                        organisations.add(org);
+                    });
+                    adapter.setOrganisations(organisations);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("MainActivity", "Error loading organisations: " + e.getMessage());
+                    Toast.makeText(this, "Error loading organizations: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                });
     }
 }
