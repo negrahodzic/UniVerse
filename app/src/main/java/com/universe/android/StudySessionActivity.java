@@ -2,8 +2,10 @@ package com.universe.android;
 
 import android.content.Intent;
 import android.os.Bundle;
+
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -33,25 +35,23 @@ public class StudySessionActivity extends AppCompatActivity {
         locationSwitch = findViewById(R.id.locationSwitch);
         breaksSwitch = findViewById(R.id.breaksSwitch);
         breakIntervalInput = findViewById(R.id.breakIntervalInput);
-        MaterialButton startButton = findViewById(R.id.startButton);
+        MaterialButton createSessionButton = findViewById(R.id.createSessionButton);
 
         // Set up toolbar
         setSupportActionBar(toolbar);
         toolbar.setNavigationOnClickListener(v -> finish());
 
         // Set up duration slider
-        durationSlider.setLabelFormatter(value ->
-                String.format("%.0f minutes", value));
+        durationSlider.setLabelFormatter(value -> String.format("%.0f minutes", value));
 
         // Enable/disable break interval based on breaks switch
         breaksSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             breakIntervalInput.setEnabled(isChecked);
         });
 
-        // Start button click handler
-        startButton.setOnClickListener(v -> {
+        createSessionButton.setOnClickListener(v -> {
             if (validateSettings()) {
-                startStudySession();
+                createStudySession();
             }
         });
 
@@ -89,16 +89,23 @@ public class StudySessionActivity extends AppCompatActivity {
         return true;
     }
 
-    private void startStudySession() {
+    private void createStudySession() {
         // Collect all settings
         int duration = (int) durationSlider.getValue();
         boolean usesBluetooth = bluetoothSwitch.isChecked();
         boolean usesWifi = wifiSwitch.isChecked();
         boolean usesLocation = locationSwitch.isChecked();
         boolean usesBreaks = breaksSwitch.isChecked();
+        int breakInterval = breaksSwitch.isChecked() ? Integer.parseInt(breakIntervalInput.getText().toString()) : 0;
 
-        Intent intent = new Intent(this, ActiveSessionActivity.class);
-        intent.putExtra("duration", (int) durationSlider.getValue());
+        // Launch waiting room
+        Intent intent = new Intent(this, WaitingRoomActivity.class);
+        intent.putExtra("duration", duration);
+        intent.putExtra("bluetooth", usesBluetooth);
+        intent.putExtra("wifi", usesWifi);
+        intent.putExtra("location", usesLocation);
+        intent.putExtra("breaks", usesBreaks);
+        intent.putExtra("breakInterval", breakInterval);
         startActivity(intent);
         finish();
     }
@@ -110,7 +117,6 @@ public class StudySessionActivity extends AppCompatActivity {
         if (locationSwitch.isChecked()) features.append("Location, ");
         if (breaksSwitch.isChecked()) features.append("Breaks, ");
 
-        return features.length() > 0 ?
-                features.substring(0, features.length() - 2) : "None";
+        return features.length() > 0 ? features.substring(0, features.length() - 2) : "None";
     }
 }

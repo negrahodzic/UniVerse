@@ -1,5 +1,6 @@
 package com.universe.android;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.widget.TextView;
@@ -25,6 +26,8 @@ public class ActiveSessionActivity extends AppCompatActivity {
     private CountDownTimer timer;
     private boolean isOnBreak = false;
 
+    private TextView settingsText;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -34,6 +37,7 @@ public class ActiveSessionActivity extends AppCompatActivity {
         // Initialize views
         timerText = findViewById(R.id.timerText);
         sessionStatusText = findViewById(R.id.sessionStatusText);
+        settingsText = findViewById(R.id.settingsText);
         breakButton = findViewById(R.id.breakButton);
         endButton = findViewById(R.id.endButton);
         RecyclerView participantsList = findViewById(R.id.participantsList);
@@ -43,25 +47,51 @@ public class ActiveSessionActivity extends AppCompatActivity {
         participantsList.setLayoutManager(new LinearLayoutManager(this));
         participantsList.setAdapter(participantAdapter);
 
-        // Load sample participants
-        loadSampleParticipants();
+        // Get settings from intent
+        loadSessionSettings();
 
         // Get session duration from intent (in minutes)
         int duration = getIntent().getIntExtra("duration", 60);
-        startTimer(duration * 60 * 1000); // Convert to milliseconds
+        startTimer(duration * 60 * 1000);
 
         // Set up buttons
         breakButton.setOnClickListener(v -> toggleBreak());
         endButton.setOnClickListener(v -> showEndSessionDialog());
     }
 
-    private void loadSampleParticipants() {
-        List<Participant> participants = new ArrayList<>();
-        participants.add(new Participant("You", true));
-        participants.add(new Participant("John", true));
-        participants.add(new Participant("Alice", false));
+    private void loadSessionSettings() {
+        Intent intent = getIntent();
+        int duration = intent.getIntExtra("duration", 60);
+        boolean usesBluetooth = intent.getBooleanExtra("bluetooth", false);
+        boolean usesWifi = intent.getBooleanExtra("wifi", false);
+        boolean usesLocation = intent.getBooleanExtra("location", false);
+        boolean usesBreaks = intent.getBooleanExtra("breaks", false);
+        int breakInterval = intent.getIntExtra("breakInterval", 45);
+
+        // Build settings text
+        StringBuilder settings = new StringBuilder();
+        settings.append("Duration: ").append(duration).append(" minutes\n");
+        settings.append("Features enabled:\n");
+        if (usesBluetooth) settings.append("• Bluetooth\n");
+        if (usesWifi) settings.append("• WiFi\n");
+        if (usesLocation) settings.append("• Location\n");
+        if (usesBreaks) settings.append("• Breaks (").append(breakInterval).append(" min intervals)\n");
+
+        settingsText.setText(settings.toString());
+
+        // Load participants
+        ArrayList<Participant> participants = new ArrayList<>();
+        participants.add(new Participant("You (Host)", true));
+        // Add participants passed from WaitingRoom
+        if (intent.hasExtra("participants")) {
+            ArrayList<String> participantNames = intent.getStringArrayListExtra("participants");
+            for (String name : participantNames) {
+                participants.add(new Participant(name, true));
+            }
+        }
         participantAdapter.setParticipants(participants);
     }
+
 
     private void startTimer(long durationMillis) {
         timer = new CountDownTimer(durationMillis, 1000) {
@@ -94,6 +124,7 @@ public class ActiveSessionActivity extends AppCompatActivity {
             timer.cancel();
         } else {
             // Resume timer with remaining time
+            timer.start();
             // TODO: Implement proper break handling
         }
     }
@@ -126,4 +157,6 @@ public class ActiveSessionActivity extends AppCompatActivity {
             timer.cancel();
         }
     }
+
+
 }

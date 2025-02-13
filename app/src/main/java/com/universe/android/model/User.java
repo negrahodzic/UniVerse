@@ -8,6 +8,8 @@ public class User {
     private int points;
     private long totalStudyTime;
 
+    private String nfcId;
+
     // Required for Firestore
     public User() {}
 
@@ -38,4 +40,7 @@ public class User {
 
     public long getTotalStudyTime() { return totalStudyTime; }
     public void setTotalStudyTime(long totalStudyTime) { this.totalStudyTime = totalStudyTime; }
+
+    public String getNfcId() { return nfcId; }
+    public void setNfcId(String nfcId) { this.nfcId = nfcId; }
 }

@@ -49,10 +49,14 @@ public class ParticipantAdapter extends RecyclerView.Adapter<ParticipantAdapter.
 
         void bind(Participant participant) {
             nameText.setText(participant.getName());
-            statusText.setText(participant.isActive() ? "Active" : "Away");
-            statusText.setTextColor(itemView.getContext().getColor(
-                    participant.isActive() ? android.R.color.holo_green_dark :
-                            android.R.color.holo_red_dark));
+            statusText.setText("TODO");
+            statusText.setTextColor(itemView.getContext().getColor(android.R.color.darker_gray));
         }
     }
+
+    public List<Participant> getParticipants() {
+        return new ArrayList<>(participants); // Returning copy to prevent external modifications
+    }
+
+
 }
