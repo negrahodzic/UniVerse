@@ -3,7 +3,10 @@ package com.universe.android;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.util.Log;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,11 +14,13 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.button.MaterialButton;
 import com.universe.android.adapter.ParticipantAdapter;
+import com.universe.android.manager.UserManager;
 import com.universe.android.model.Participant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class ActiveSessionActivity extends AppCompatActivity {
     private TextView timerText;
@@ -52,7 +57,7 @@ public class ActiveSessionActivity extends AppCompatActivity {
 
         // Get session duration from intent (in minutes)
         int duration = getIntent().getIntExtra("duration", 60);
-        startTimer(duration * 60 * 1000);
+        startTimer(duration * 1000); // TODO: change it back to duration * 60 * 1000)
 
         // Set up buttons
         breakButton.setOnClickListener(v -> toggleBreak());
@@ -81,7 +86,6 @@ public class ActiveSessionActivity extends AppCompatActivity {
 
         // Load participants
         ArrayList<Participant> participants = new ArrayList<>();
-        participants.add(new Participant("You (Host)", true));
         // Add participants passed from WaitingRoom
         if (intent.hasExtra("participants")) {
             ArrayList<String> participantNames = intent.getStringArrayListExtra("participants");
@@ -144,8 +148,29 @@ public class ActiveSessionActivity extends AppCompatActivity {
     private void showSessionCompleteDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("Session Complete!")
-                .setMessage("Congratulations! You've earned 100 points!")
-                .setPositiveButton("OK", (dialog, which) -> finish())
+                .setMessage("Congratulations! All participants earned 100 points!")
+                .setPositiveButton("OK", (dialog, which) -> {
+                    // Get non-anonymous usernames
+                    List<String> participants = participantAdapter.getParticipants()
+                            .stream()
+                            .map(Participant::getName)
+                            .collect(Collectors.toList());
+
+                    // Award points using UserManager
+                    UserManager.getInstance()
+                            .awardSessionPoints(participants, 100)
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d("Session", "Successfully awarded points to all participants");
+                                finish();
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e("Session", "Error awarding points: " + e.getMessage());
+                                Toast.makeText(this,
+                                        "Error awarding points. Please contact support.",
+                                        Toast.LENGTH_LONG).show();
+                                finish();
+                            });
+                })
                 .setCancelable(false)
                 .show();
     }
@@ -157,6 +182,7 @@ public class ActiveSessionActivity extends AppCompatActivity {
             timer.cancel();
         }
     }
+
 
 
 }

@@ -42,9 +42,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                android:valueFrom="30"
-                android:valueTo="180"
-                android:stepSize="30"/>
+                android:valueFrom="5"
+                android:valueTo="30"
+                android:stepSize="5"/>
 
             <!-- Features -->
             <TextView
