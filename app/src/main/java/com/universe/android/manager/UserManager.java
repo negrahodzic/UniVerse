@@ -1,5 +1,9 @@
 package com.universe.android.manager;
 
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.provider.MediaStore;
+import android.util.Base64;
 import android.util.Log;
 
 import com.google.android.gms.tasks.Task;
@@ -12,8 +16,12 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.universe.android.model.User;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+
+import android.net.Uri;
 
 public class UserManager {
     private static UserManager instance;
@@ -166,6 +174,73 @@ public class UserManager {
                 Log.e("UserManager", "Failed to award session points", task.getException());
             }
         });
+    }
+
+    public Task<Void> updateUsername(String newUsername) {
+        if (auth.getCurrentUser() == null) return null;
+
+        return db.collection("users")
+                .document(auth.getCurrentUser().getUid())
+                .update("username", newUsername);
+    }
+
+    public Task<Void> updatePassword(String newPassword) {
+        if (auth.getCurrentUser() == null) return null;
+
+        return auth.getCurrentUser().updatePassword(newPassword);
+    }
+
+    public Task<Void> uploadProfileImage(Uri imageUri, Context context) {
+        if (auth.getCurrentUser() == null) return null;
+
+        try {
+            // Convert Uri to Bitmap
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(context.getContentResolver(), imageUri);
+
+            // Compress and resize bitmap
+            Bitmap resizedBitmap = getResizedBitmap(bitmap, 300); // max 300px
+
+            // Convert to Base64
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
+            byte[] imageBytes = baos.toByteArray();
+            String base64Image = Base64.encodeToString(imageBytes, Base64.DEFAULT);
+
+            // Save to Firestore
+            return db.collection("users")
+                    .document(auth.getCurrentUser().getUid())
+                    .update("profileImageBase64", base64Image);
+        } catch (IOException e) {
+            Log.e("UserManager", "Error processing image", e);
+            return Tasks.forException(e);
+        }
+    }
+
+    private Bitmap getResizedBitmap(Bitmap image, int maxSize) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+
+        float bitmapRatio = (float) width / (float) height;
+        if (bitmapRatio > 1) {
+            width = maxSize;
+            height = (int) (width / bitmapRatio);
+        } else {
+            height = maxSize;
+            width = (int) (height * bitmapRatio);
+        }
+        return Bitmap.createScaledBitmap(image, width, height, true);
+    }
+    public void updateOrganisation(String newOrgId) {
+        // TODO / Task<Void>
+    }
+
+
+    public Task<Void> updateNfcId(String newNfcId) {
+        if (auth.getCurrentUser() == null) return null;
+
+        return db.collection("users")
+                .document(auth.getCurrentUser().getUid())
+                .update("nfcId", newNfcId);
     }
 
 }
