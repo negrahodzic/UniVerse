@@ -17,12 +17,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.universe.android.adapter.ParticipantAdapter;
 import com.universe.android.model.Participant;
 import com.universe.android.model.User;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -104,10 +106,26 @@ public class WaitingRoomActivity extends AppCompatActivity {
         participantsList.setLayoutManager(new LinearLayoutManager(this));
         participantsList.setAdapter(participantAdapter);
 
-        // Add host as first participant
-        List<Participant> participants = new ArrayList<>();
-        participants.add(new Participant("You (Host)", true));
-        participantAdapter.setParticipants(participants);
+        // Get current user data to add host with actual username
+        FirebaseUser currentUser = auth.getCurrentUser();
+        if (currentUser != null) {
+            db.collection("users").document(currentUser.getUid()).get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        User user = documentSnapshot.toObject(User.class);
+                        if (user != null) {
+                            // Add host as first participant with actual username
+                            List<Participant> participants = new ArrayList<>();
+                            Participant hostParticipant = new Participant(user.getUsername() + " (Host)", true);
+                            hostParticipant.setUserId(currentUser.getUid());
+
+                            // Store actual username to use for points
+                            hostParticipant.setActualUsername(user.getUsername());
+
+                            participants.add(hostParticipant);
+                            participantAdapter.setParticipants(participants);
+                        }
+                    });
+        }
     }
 
     private void updateSessionInfo() {
@@ -163,6 +181,8 @@ public class WaitingRoomActivity extends AppCompatActivity {
         byte[] tagId = tag.getId();
         String serialNumber = bytesToHex(tagId);
 
+        // Get current user ID (host)
+        String currentUserId = auth.getCurrentUser().getUid();
 
         // Query Firestore for user with this NFC ID
         db.collection("users")
@@ -170,40 +190,56 @@ public class WaitingRoomActivity extends AppCompatActivity {
                 .limit(1)  // Only need one result
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<Participant> currentParticipants = participantAdapter.getParticipants();
-
-                    // Default name for anonymous user
-                    String participantName = "Anonymous (NFC: " + serialNumber.substring(0, 4) + ")";
-
-                    // If user is found, use their username instead
-                    if (!queryDocumentSnapshots.isEmpty()) {
-                        User user = queryDocumentSnapshots.getDocuments().get(0).toObject(User.class);
-                        participantName = user.getUsername();
+                    // If no user found with this NFC ID, show error
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        Toast.makeText(this, "Unregistered NFC tag. Please register your tag in your profile.",
+                                Toast.LENGTH_LONG).show();
+                        return;
                     }
 
-                    // Check if this participant (by NFC ID) already joined
+                    // Get user from query result
+                    User user = queryDocumentSnapshots.getDocuments().get(0).toObject(User.class);
+                    String userId = user.getUid();
+                    String participantName = user.getUsername();
+
+
+                    // Check if this NFC tag belongs to the host
+                    if (userId.equals(currentUserId)) {
+                        Toast.makeText(this, "This is your own NFC tag", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    // Check if this participant already joined (by user ID)
+                    List<Participant> currentParticipants = participantAdapter.getParticipants();
                     boolean alreadyJoined = false;
+
                     for (Participant p : currentParticipants) {
-                        // TODO: change this to actually check for users nfcId and not name substring
-                        if (p.getName().contains(serialNumber.substring(0, 4))) {
+                        // Check by userId if available
+                        if (p.getUserId() != null && p.getUserId().equals(userId)) {
                             alreadyJoined = true;
                             break;
                         }
                     }
 
                     if (alreadyJoined) {
-                        Toast.makeText(this, "This device already joined!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "This user has already joined!", Toast.LENGTH_SHORT).show();
                     } else {
-                        currentParticipants.add(new Participant(participantName, true));
+                        // Create new participant with userId stored
+                        Participant newParticipant = new Participant(participantName, true);
+                        newParticipant.setUserId(userId);
+                        newParticipant.setNfcId(serialNumber);
+                        newParticipant.setActualUsername(participantName);  // Store actual username
+
+                        currentParticipants.add(newParticipant);
                         participantAdapter.setParticipants(currentParticipants);
                         Toast.makeText(this, participantName + " joined!", Toast.LENGTH_SHORT).show();
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error reading NFC tag", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Error reading NFC tag: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
                 });
     }
-
     private String bytesToHex(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
         for (byte b : bytes) {
@@ -221,13 +257,17 @@ public class WaitingRoomActivity extends AppCompatActivity {
         intent.putExtra("breaks", usesBreaks);
         intent.putExtra("breakInterval", breakInterval);
 
-        // Pass participants
-        ArrayList<String> participantNames = new ArrayList<>();
+        // Convert participants to a serializable format
+        ArrayList<HashMap<String, String>> participantData = new ArrayList<>();
         for (Participant p : participantAdapter.getParticipants()) {
-            participantNames.add(p.getName());
+            HashMap<String, String> data = new HashMap<>();
+            data.put("name", p.getName());
+            data.put("userId", p.getUserId());
+            data.put("actualUsername", p.getActualUsername());
+            participantData.add(data);
         }
-        intent.putStringArrayListExtra("participants", participantNames);
 
+        intent.putExtra("participantData", participantData);
         startActivity(intent);
         finish();
     }

@@ -17,6 +17,7 @@ import com.universe.android.adapter.ParticipantAdapter;
 import com.universe.android.manager.UserManager;
 import com.universe.android.model.Participant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -86,13 +87,27 @@ public class ActiveSessionActivity extends AppCompatActivity {
 
         // Load participants
         ArrayList<Participant> participants = new ArrayList<>();
-        // Add participants passed from WaitingRoom
-        if (intent.hasExtra("participants")) {
+
+        // Check for the new participant data format
+        if (intent.hasExtra("participantData")) {
+            ArrayList<HashMap<String, String>> participantData =
+                    (ArrayList<HashMap<String, String>>) intent.getSerializableExtra("participantData");
+
+            for (HashMap<String, String> data : participantData) {
+                Participant p = new Participant(data.get("name"), true);
+                p.setUserId(data.get("userId"));
+                p.setActualUsername(data.get("actualUsername"));
+                participants.add(p);
+            }
+        }
+        // Fallback for backward compatibility
+        else if (intent.hasExtra("participants")) {
             ArrayList<String> participantNames = intent.getStringArrayListExtra("participants");
             for (String name : participantNames) {
                 participants.add(new Participant(name, true));
             }
         }
+
         participantAdapter.setParticipants(participants);
     }
 
@@ -150,11 +165,25 @@ public class ActiveSessionActivity extends AppCompatActivity {
                 .setTitle("Session Complete!")
                 .setMessage("Congratulations! All participants earned 100 points!")
                 .setPositiveButton("OK", (dialog, which) -> {
-                    // Get non-anonymous usernames
+                    // Get all participants' actual usernames
                     List<String> participants = participantAdapter.getParticipants()
                             .stream()
-                            .map(Participant::getName)
+                            .map(participant -> {
+                                // Use the stored actual username if available, otherwise try to extract from name
+                                if (participant.getActualUsername() != null && !participant.getActualUsername().isEmpty()) {
+                                    return participant.getActualUsername();
+                                } else {
+                                    // Fallback to extract from display name if needed
+                                    String name = participant.getName();
+                                    return name.replace(" (Host)", "").trim();
+                                }
+                            })
                             .collect(Collectors.toList());
+
+                    // Log the usernames to help with debugging
+                    for (String username : participants) {
+                        Log.d("Session", "Awarding points to: " + username);
+                    }
 
                     // Award points using UserManager
                     UserManager.getInstance()

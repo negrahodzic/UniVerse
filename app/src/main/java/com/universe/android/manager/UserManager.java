@@ -120,13 +120,10 @@ public class UserManager {
 
         return db.runTransaction(transaction -> {
             for (String username : usernames) {
-                // Sanitize username
-                String cleanUsername = username.replace(" (Host)", "")
-                        .replace("Anonymous", "")
-                        .trim();
+                String cleanUsername = username.trim();
 
-                // Skip empty or Anonymous usernames
-                if (cleanUsername.isEmpty() || cleanUsername.contains("Anonymous")) {
+                // Skip empty usernames
+                if (cleanUsername.isEmpty()) {
                     continue;
                 }
 
@@ -135,10 +132,8 @@ public class UserManager {
                         .whereEqualTo("username", cleanUsername)
                         .limit(1);
                 try {
-
                     // Get the query snapshot synchronously
                     QuerySnapshot querySnapshot = Tasks.await(userQuery.get());
-
 
                     if (!querySnapshot.isEmpty()) {
                         DocumentSnapshot userDoc = querySnapshot.getDocuments().get(0);
@@ -157,13 +152,9 @@ public class UserManager {
                     } else {
                         Log.w("UserManager", "No user found for username: " + cleanUsername);
                     }
-
-                } catch (ExecutionException e) {
-                    throw new RuntimeException(e);
-                } catch (InterruptedException e) {
+                } catch (ExecutionException | InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-
             }
 
             return null;
@@ -175,7 +166,6 @@ public class UserManager {
             }
         });
     }
-
     public Task<Void> updateUsername(String newUsername) {
         if (auth.getCurrentUser() == null) return null;
 
