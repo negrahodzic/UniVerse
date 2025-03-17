@@ -1,44 +1,37 @@
 package com.universe.android.fragment;
 
+import android.content.Intent;
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
-
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.toolbox.JsonArrayRequest;
-import com.universe.android.R;
-import com.android.volley.toolbox.Volley;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.universe.android.EventDetailActivity;
+import com.universe.android.R;
 import com.universe.android.adapter.EventAdapter;
 import com.universe.android.model.Event;
+import com.universe.android.service.EventService;
 
-import org.json.JSONObject;
-
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
-
 
 public class UpcomingEventsFragment extends Fragment {
     private RecyclerView recyclerView;
     private EventAdapter adapter;
-
-    private static final String API_URL = "https://java-war-test.onrender.com/webresources/events";
-
+    private ProgressBar progressBar;
+    private TextView emptyStateText;
+    private EventService eventService;
 
     public UpcomingEventsFragment() {
+        // Required empty public constructor
     }
 
     @Override
@@ -51,83 +44,82 @@ public class UpcomingEventsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        // Initialize EventService
+        eventService = new EventService(requireContext());
+
+        // Find views
         recyclerView = view.findViewById(R.id.eventsRecyclerView);
+        progressBar = view.findViewById(R.id.progressBar);
+        emptyStateText = view.findViewById(R.id.emptyStateText);
+
+        // Set up RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
         adapter = new EventAdapter(event -> {
-            // TODO: Handle event booking
+            // Handle event click - open event detail
+            Intent intent = new Intent(requireContext(), EventDetailActivity.class);
+            intent.putExtra("event", event);
+            startActivity(intent);
         });
+
         recyclerView.setAdapter(adapter);
 
-        loadSampleEvents();
-
-        loadEventsFromApi();
+        // Load events from API
+        loadEvents();
     }
 
-    private void loadSampleEvents() {
-        List<Event> events = new ArrayList<>();
-        events.add(new Event(
-                "1",
-                "Campus Music Festival",
-                "March 15, 2024",
-                "University Main Square",
-                500,
-                R.drawable.ic_launcher_background
-        ));
-        events.add(new Event(
-                "2",
-                "Career Fair 2024",
-                "March 20, 2024",
-                "Student Union Building",
-                200,
-                R.drawable.ic_launcher_background
-        ));
-        adapter.setEvents(events);
+    private void loadEvents() {
+        // Show loading state
+        progressBar.setVisibility(View.VISIBLE);
+        recyclerView.setVisibility(View.GONE);
+        emptyStateText.setVisibility(View.GONE);
+
+        // Call our EventService
+        eventService.getUpcomingEvents(new EventService.EventCallback() {
+            @Override
+            public void onSuccess(List<Event> events) {
+                if (getActivity() == null || !isAdded()) return;
+
+                // Hide progress bar
+                progressBar.setVisibility(View.GONE);
+
+                if (events.isEmpty()) {
+                    // Show empty state
+                    emptyStateText.setVisibility(View.VISIBLE);
+                    recyclerView.setVisibility(View.GONE);
+                } else {
+                    // Show events
+                    adapter.setEvents(events);
+                    recyclerView.setVisibility(View.VISIBLE);
+                    emptyStateText.setVisibility(View.GONE);
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                if (getActivity() == null || !isAdded()) return;
+
+                // Hide progress bar
+                progressBar.setVisibility(View.GONE);
+
+                // Show error
+                Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+
+                // Show empty state with error message
+                emptyStateText.setText("Couldn't load events.\nTap to retry.");
+                emptyStateText.setVisibility(View.VISIBLE);
+                emptyStateText.setOnClickListener(v -> loadEvents());
+                recyclerView.setVisibility(View.GONE);
+            }
+        });
     }
 
-
-    private void loadEventsFromApi() {
-        RequestQueue queue = Volley.newRequestQueue(requireContext());
-
-        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, API_URL, null,
-                response -> {
-                    try {
-                        List<Event> events = new ArrayList<>();
-                        for (int i = 0; i < response.length(); i++) {
-                            JSONObject eventJson = response.getJSONObject(i);
-
-                            // Parse venue
-                            JSONObject venueJson = eventJson.getJSONObject("venue");
-
-                            // Parse datetime
-                            String dateTimeStr = eventJson.getString("eventDateTime");
-                            SimpleDateFormat apiFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
-                            SimpleDateFormat displayFormat = new SimpleDateFormat("MMMM d, yyyy", Locale.US);
-                            Date date = apiFormat.parse(dateTimeStr);
-                            String displayDate = displayFormat.format(date);
-
-                            events.add(new Event(
-                                    eventJson.getString("eventId"),
-                                    eventJson.getString("eventName"),
-                                    displayDate,
-                                    venueJson.getString("address"),
-                                    eventJson.getInt("availableTickets"),
-
-                                    R.drawable.ic_launcher_background  // Default image
-                            ));
-                        }
-                        adapter.setEvents(events);
-                    } catch (Exception e) {
-                        Toast.makeText(requireContext(), "Error parsing events: " + e.getMessage(),
-                                Toast.LENGTH_LONG).show();
-                    }
-                },
-                error -> {
-                    Toast.makeText(requireContext(), "Error loading events: " + error.getMessage(),
-                            Toast.LENGTH_LONG).show();
-                    loadSampleEvents(); // Fallback to sample events if API fails
-                });
-
-        queue.add(jsonArrayRequest);
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Refresh events when returning to fragment
+        if (adapter != null && adapter.getItemCount() == 0) {
+            loadEvents();
+        }
     }
 }

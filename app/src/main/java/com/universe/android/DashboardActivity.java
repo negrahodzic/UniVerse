@@ -8,13 +8,16 @@ import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.universe.android.adapter.EventPreviewAdapter;
 import com.universe.android.manager.UserManager;
 import com.universe.android.model.Event;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import android.widget.TextView;
 
 public class DashboardActivity extends AppCompatActivity {
@@ -86,16 +89,22 @@ public class DashboardActivity extends AppCompatActivity {
         events.add(new Event(
                 "1",
                 "Campus Music Festival",
-                "March 15, 2024",
+                "Join us for a night of amazing performances by student bands and professional artists.",
+                "March 15, 2025",
+                "7:30 PM",
                 "University Main Square",
+                "123 University Avenue, Nottingham NG1 1AA",
                 500,
                 R.drawable.ic_launcher_background
         ));
         events.add(new Event(
                 "2",
-                "Career Fair 2024",
-                "March 20, 2024",
+                "Career Fair 2025",
+                "Connect with top employers and explore internship and job opportunities.",
+                "March 20, 2025",
+                "10:00 AM",
                 "Student Union Building",
+                "456 University Boulevard, Nottingham NG7 2RD",
                 200,
                 R.drawable.ic_launcher_background
         ));
