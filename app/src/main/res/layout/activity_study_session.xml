@@ -29,83 +29,171 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Session Duration -->
-            <TextView
+            <!-- Session Duration Card -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Session Duration"
-                android:textAppearance="?attr/textAppearanceHeadline6"
-                android:layout_marginBottom="8dp"/>
+                android:layout_marginBottom="16dp"
+                app:cardElevation="2dp"
+                app:cardCornerRadius="8dp">
 
-            <com.google.android.material.slider.Slider
-                android:id="@+id/durationSlider"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                android:valueFrom="5"
-                android:valueTo="30"
-                android:stepSize="5"/>
-
-            <!-- Features -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Tracking Features"
-                android:textAppearance="?attr/textAppearanceHeadline6"
-                android:layout_marginBottom="8dp"/>
-
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/bluetoothSwitch"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Bluetooth Proximity"
-                android:layout_marginBottom="8dp"/>
-
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/wifiSwitch"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="WiFi Check"
-                android:layout_marginBottom="8dp"/>
-
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/locationSwitch"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Location Tracking"
-                android:layout_marginBottom="24dp"/>
-
-            <!-- Breaks -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Break Settings"
-                android:textAppearance="?attr/textAppearanceHeadline6"
-                android:layout_marginBottom="8dp"/>
-
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/breaksSwitch"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Enable Breaks"
-                android:layout_marginBottom="8dp"/>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/breakIntervalLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Break Interval (minutes)"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/breakIntervalInput"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="number"
-                    android:text="45"/>
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-            </com.google.android.material.textfield.TextInputLayout>
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Session Duration"
+                        android:textAppearance="?attr/textAppearanceHeadline6"
+                        android:layout_marginBottom="16dp"/>
 
+                    <!-- Circular time selector view -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginBottom="16dp">
+
+                        <!-- This would ideally be a custom circular slider view -->
+                        <!-- For now, we'll use a stock circular progress indicator for visualization -->
+                        <FrameLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_centerHorizontal="true">
+
+                            <com.google.android.material.progressindicator.CircularProgressIndicator
+                                android:id="@+id/timeSelector"
+                                android:layout_width="250dp"
+                                android:layout_height="250dp"
+                                app:indicatorSize="250dp"
+                                app:trackThickness="12dp"
+                                app:trackCornerRadius="6dp"
+                                app:indicatorColor="@color/design_default_color_primary"
+                                app:trackColor="@color/design_default_color_surface"
+                                android:progress="25"
+                                app:indicatorDirectionCircular="clockwise"/>
+
+                            <TextView
+                                android:id="@+id/timeSelectionText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="30 min"
+                                android:textSize="36sp"
+                                android:textStyle="bold"
+                                android:layout_gravity="center"/>
+                        </FrameLayout>
+                    </RelativeLayout>
+
+                    <!-- Time selection markers -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:layout_marginTop="8dp">
+
+                        <LinearLayout
+                            android:id="@+id/time3Button"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:background="?attr/selectableItemBackground"
+                            android:padding="8dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="3s"
+                                android:textStyle="bold"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="20 pts"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/time6Button"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:background="?attr/selectableItemBackground"
+                            android:padding="8dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="6s"
+                                android:textStyle="bold"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="40 pts"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/time9Button"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:background="?attr/selectableItemBackground"
+                            android:padding="8dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="9s"
+                                android:textStyle="bold"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="80 pts"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/time12Button"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:background="?attr/selectableItemBackground"
+                            android:padding="8dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="12s"
+                                android:textStyle="bold"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="100 pts"/>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Points info -->
+                    <TextView
+                        android:id="@+id/pointsInfoText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="You will earn 50 points for completing this session."
+                        android:gravity="center"
+                        android:layout_marginTop="16dp"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </ScrollView>
 

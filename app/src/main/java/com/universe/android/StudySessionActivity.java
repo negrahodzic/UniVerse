@@ -2,6 +2,9 @@ package com.universe.android;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -9,17 +12,33 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.slider.Slider;
-import com.google.android.material.switchmaterial.SwitchMaterial;
-import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 public class StudySessionActivity extends AppCompatActivity {
-    private Slider durationSlider;
-    private SwitchMaterial bluetoothSwitch;
-    private SwitchMaterial wifiSwitch;
-    private SwitchMaterial locationSwitch;
-    private SwitchMaterial breaksSwitch;
-    private TextInputEditText breakIntervalInput;
+    private CircularProgressIndicator timeSelector;
+    private TextView timeSelectionText;
+    private TextView pointsInfoText;
+    private LinearLayout time3Button;
+    private LinearLayout time6Button;
+    private LinearLayout time9Button;
+    private LinearLayout time12Button;
+    private MaterialButton createSessionButton;
+
+    // Time presets for testing in seconds
+    private static final int TIME_3_SEC = 3;
+    private static final int TIME_6_SEC = 6;
+    private static final int TIME_9_SEC = 9;
+    private static final int TIME_12_SEC = 12;
+
+    // Points for each time preset
+    private static final int POINTS_3_SEC = 20;
+    private static final int POINTS_6_SEC = 40;
+    private static final int POINTS_9_SEC = 80;
+    private static final int POINTS_12_SEC = 100;
+
+    // Currently selected duration (in seconds for testing)
+    private int selectedDuration = TIME_3_SEC;
+    private int selectedPoints = POINTS_3_SEC;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,34 +47,71 @@ public class StudySessionActivity extends AppCompatActivity {
         setContentView(R.layout.activity_study_session);
 
         // Initialize views
+        initializeViews();
+
+        // Set up listeners
+        setupListeners();
+
+        // Set up bottom navigation
+        setupBottomNavigation();
+
+        // Initialize with default selection
+        updateDurationSelection(TIME_3_SEC, POINTS_3_SEC);
+    }
+
+    private void initializeViews() {
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
-        durationSlider = findViewById(R.id.durationSlider);
-        bluetoothSwitch = findViewById(R.id.bluetoothSwitch);
-        wifiSwitch = findViewById(R.id.wifiSwitch);
-        locationSwitch = findViewById(R.id.locationSwitch);
-        breaksSwitch = findViewById(R.id.breaksSwitch);
-        breakIntervalInput = findViewById(R.id.breakIntervalInput);
-        MaterialButton createSessionButton = findViewById(R.id.createSessionButton);
+        timeSelector = findViewById(R.id.timeSelector);
+        timeSelectionText = findViewById(R.id.timeSelectionText);
+        pointsInfoText = findViewById(R.id.pointsInfoText);
+        time3Button = findViewById(R.id.time3Button);
+        time6Button = findViewById(R.id.time6Button);
+        time9Button = findViewById(R.id.time9Button);
+        time12Button = findViewById(R.id.time12Button);
+        createSessionButton = findViewById(R.id.createSessionButton);
 
         // Set up toolbar
         setSupportActionBar(toolbar);
         toolbar.setNavigationOnClickListener(v -> finish());
+    }
 
-        // Set up duration slider
-        durationSlider.setLabelFormatter(value -> String.format("%.0f minutes", value));
+    private void setupListeners() {
+        // Time preset button listeners
+        time3Button.setOnClickListener(v -> updateDurationSelection(TIME_3_SEC, POINTS_3_SEC));
+        time6Button.setOnClickListener(v -> updateDurationSelection(TIME_6_SEC, POINTS_6_SEC));
+        time9Button.setOnClickListener(v -> updateDurationSelection(TIME_9_SEC, POINTS_9_SEC));
+        time12Button.setOnClickListener(v -> updateDurationSelection(TIME_12_SEC, POINTS_12_SEC));
 
-        // Enable/disable break interval based on breaks switch
-        breaksSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            breakIntervalInput.setEnabled(isChecked);
-        });
+        // Create session button listener
+        createSessionButton.setOnClickListener(v -> createStudySession());
+    }
 
-        createSessionButton.setOnClickListener(v -> {
-            if (validateSettings()) {
-                createStudySession();
-            }
-        });
+    private void updateDurationSelection(int durationSeconds, int points) {
+        // Update the selected values
+        selectedDuration = durationSeconds;
+        selectedPoints = points;
 
+        // Update the circular progress based on maximum time (assuming 12 seconds is max)
+        int progress = (durationSeconds * 100) / TIME_12_SEC;
+        timeSelector.setProgress(progress);
+
+        // Update text displays
+        timeSelectionText.setText(durationSeconds + "s"); // For testing we show seconds
+        pointsInfoText.setText("You will earn " + points + " points for completing this session.");
+    }
+
+    private void createStudySession() {
+        // Launch waiting room with selected settings
+        Intent intent = new Intent(this, WaitingRoomActivity.class);
+        intent.putExtra("duration", selectedDuration);
+        intent.putExtra("points", selectedPoints);
+        startActivity(intent);
+        finish();
+    }
+
+    private void setupBottomNavigation() {
         BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
+        bottomNav.setSelectedItemId(R.id.navigation_study);
 
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
@@ -76,47 +132,5 @@ public class StudySessionActivity extends AppCompatActivity {
             }
             return false;
         });
-    }
-
-    private boolean validateSettings() {
-        if (breaksSwitch.isChecked()) {
-            String breakInterval = breakIntervalInput.getText().toString();
-            if (breakInterval.isEmpty() || Integer.parseInt(breakInterval) < 15) {
-                breakIntervalInput.setError("Break interval must be at least 15 minutes");
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private void createStudySession() {
-        // Collect all settings
-        int duration = (int) durationSlider.getValue();
-        boolean usesBluetooth = bluetoothSwitch.isChecked();
-        boolean usesWifi = wifiSwitch.isChecked();
-        boolean usesLocation = locationSwitch.isChecked();
-        boolean usesBreaks = breaksSwitch.isChecked();
-        int breakInterval = breaksSwitch.isChecked() ? Integer.parseInt(breakIntervalInput.getText().toString()) : 0;
-
-        // Launch waiting room
-        Intent intent = new Intent(this, WaitingRoomActivity.class);
-        intent.putExtra("duration", duration);
-        intent.putExtra("bluetooth", usesBluetooth);
-        intent.putExtra("wifi", usesWifi);
-        intent.putExtra("location", usesLocation);
-        intent.putExtra("breaks", usesBreaks);
-        intent.putExtra("breakInterval", breakInterval);
-        startActivity(intent);
-        finish();
-    }
-
-    private String getEnabledFeatures() {
-        StringBuilder features = new StringBuilder();
-        if (bluetoothSwitch.isChecked()) features.append("Bluetooth, ");
-        if (wifiSwitch.isChecked()) features.append("WiFi, ");
-        if (locationSwitch.isChecked()) features.append("Location, ");
-        if (breaksSwitch.isChecked()) features.append("Breaks, ");
-
-        return features.length() > 0 ? features.substring(0, features.length() - 2) : "None";
     }
 }

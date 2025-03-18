@@ -21,11 +21,14 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.universe.android.adapter.ParticipantAdapter;
 import com.universe.android.model.Participant;
+import com.universe.android.model.StudySession;
 import com.universe.android.model.User;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class WaitingRoomActivity extends AppCompatActivity {
@@ -42,12 +45,8 @@ public class WaitingRoomActivity extends AppCompatActivity {
     private FirebaseAuth auth;
 
     // Session settings
-    private int duration;
-    private boolean usesBluetooth;
-    private boolean usesWifi;
-    private boolean usesLocation;
-    private boolean usesBreaks;
-    private int breakInterval;
+    private int duration; // in seconds for testing
+    private int points;   // points rewarded for this session
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,12 +71,8 @@ public class WaitingRoomActivity extends AppCompatActivity {
 
         // Get session settings from intent
         Intent intent = getIntent();
-        duration = intent.getIntExtra("duration", 60);
-        usesBluetooth = intent.getBooleanExtra("bluetooth", false);
-        usesWifi = intent.getBooleanExtra("wifi", false);
-        usesLocation = intent.getBooleanExtra("location", false);
-        usesBreaks = intent.getBooleanExtra("breaks", false);
-        breakInterval = intent.getIntExtra("breakInterval", 45);
+        duration = intent.getIntExtra("duration", 3); // Default to 3 seconds for testing
+        points = intent.getIntExtra("points", 20);   // Default to 20 points
 
         // Generate session ID
         sessionId = generateSessionId();
@@ -117,8 +112,6 @@ public class WaitingRoomActivity extends AppCompatActivity {
                             List<Participant> participants = new ArrayList<>();
                             Participant hostParticipant = new Participant(user.getUsername() + " (Host)", true);
                             hostParticipant.setUserId(currentUser.getUid());
-
-                            // Store actual username to use for points
                             hostParticipant.setActualUsername(user.getUsername());
 
                             participants.add(hostParticipant);
@@ -131,19 +124,13 @@ public class WaitingRoomActivity extends AppCompatActivity {
     private void updateSessionInfo() {
         sessionIdText.setText("Session #" + sessionId);
 
-        StringBuilder settings = new StringBuilder();
-        settings.append("Duration: ").append(duration).append(" minutes\n");
-        settings.append("Features: ");
-        if (usesBluetooth) settings.append("Bluetooth, ");
-        if (usesWifi) settings.append("WiFi, ");
-        if (usesLocation) settings.append("Location, ");
-        if (usesBreaks) settings.append("Breaks (").append(breakInterval).append("min), ");
+        // Create a simplified settings text
+        String durationText = (duration < 60) ?
+                duration + " seconds" : // For testing use seconds
+                (duration / 60) + " minutes"; // For production use minutes
 
-        if (settings.toString().endsWith(", ")) {
-            settings.setLength(settings.length() - 2);
-        }
-
-        settingsText.setText(settings.toString());
+        settingsText.setText("Duration: " + durationText + "\n" +
+                "Points reward: " + points + " points");
     }
 
     private String generateSessionId() {
@@ -202,7 +189,6 @@ public class WaitingRoomActivity extends AppCompatActivity {
                     String userId = user.getUid();
                     String participantName = user.getUsername();
 
-
                     // Check if this NFC tag belongs to the host
                     if (userId.equals(currentUserId)) {
                         Toast.makeText(this, "This is your own NFC tag", Toast.LENGTH_SHORT).show();
@@ -240,6 +226,7 @@ public class WaitingRoomActivity extends AppCompatActivity {
                             Toast.LENGTH_SHORT).show();
                 });
     }
+
     private String bytesToHex(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
         for (byte b : bytes) {
@@ -249,13 +236,14 @@ public class WaitingRoomActivity extends AppCompatActivity {
     }
 
     private void startSession() {
+        // Create study session record in Firestore
+        createStudySessionRecord();
+
+        // Start the active session activity
         Intent intent = new Intent(this, ActiveSessionActivity.class);
+        intent.putExtra("sessionId", sessionId);
         intent.putExtra("duration", duration);
-        intent.putExtra("bluetooth", usesBluetooth);
-        intent.putExtra("wifi", usesWifi);
-        intent.putExtra("location", usesLocation);
-        intent.putExtra("breaks", usesBreaks);
-        intent.putExtra("breakInterval", breakInterval);
+        intent.putExtra("points", points);
 
         // Convert participants to a serializable format
         ArrayList<HashMap<String, String>> participantData = new ArrayList<>();
@@ -270,5 +258,44 @@ public class WaitingRoomActivity extends AppCompatActivity {
         intent.putExtra("participantData", participantData);
         startActivity(intent);
         finish();
+    }
+
+    private void createStudySessionRecord() {
+        FirebaseUser currentUser = auth.getCurrentUser();
+        if (currentUser == null) return;
+
+        // Create participants list
+        List<Map<String, String>> participants = new ArrayList<>();
+        for (Participant p : participantAdapter.getParticipants()) {
+            Map<String, String> participantMap = new HashMap<>();
+            participantMap.put("userId", p.getUserId());
+            participantMap.put("username", p.getActualUsername());
+            participantMap.put("nfcId", p.getNfcId());
+            participants.add(participantMap);
+        }
+
+        // Create study session object
+        StudySession studySession = new StudySession(
+                sessionId,
+                currentUser.getUid(),
+                participants,
+                new Date(),
+                duration
+        );
+
+        // Set points to be awarded
+        studySession.setPointsAwarded(points);
+
+        // Save to Firestore - using "sessions" collection
+        db.collection("sessions")
+                .document(sessionId)
+                .set(studySession)
+                .addOnSuccessListener(aVoid -> {
+                    // Session created successfully, no need to handle here
+                })
+                .addOnFailureListener(e -> {
+                    // Session creation failed, but still continue
+                    Toast.makeText(this, "Failed to record session: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
 }
