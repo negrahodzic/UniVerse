@@ -2,6 +2,9 @@ package com.universe.android;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -11,20 +14,41 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.universe.android.adapter.EventPreviewAdapter;
+import com.universe.android.adapter.SessionHistoryAdapter;
 import com.universe.android.manager.UserManager;
 import com.universe.android.model.Event;
+import com.universe.android.model.StudySession;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import android.widget.TextView;
+public class DashboardActivity extends AppCompatActivity implements SessionHistoryAdapter.OnSessionClickListener {
+    private static final String TAG = "DashboardActivity";
+    private static final int MAX_RECENT_SESSIONS = 3; // Maximum number of recent sessions to show
 
-public class DashboardActivity extends AppCompatActivity {
+    // User stats views
     private TextView pointsText;
     private TextView levelText;
     private TextView rankText;
     private TextView sessionsText;
+
+    // Session views
+    private RecyclerView recentSessionsList;
+    private TextView noSessionsText;
+    private TextView viewAllSessionsButton;
+
+    // Adapters
+    private SessionHistoryAdapter sessionAdapter;
+    private EventPreviewAdapter eventAdapter;
+
+    // Firebase
+    private FirebaseFirestore db;
+    private FirebaseAuth auth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,37 +56,66 @@ public class DashboardActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_dashboard);
 
+        // Initialize Firebase
+        db = FirebaseFirestore.getInstance();
+        auth = FirebaseAuth.getInstance();
+
         // Initialize views
-        pointsText = findViewById(R.id.pointsText);
-        levelText = findViewById(R.id.levelText);
-        rankText = findViewById(R.id.rankText);
-        sessionsText = findViewById(R.id.sessionsText);
-        MaterialButton startSessionButton = findViewById(R.id.startSessionButton);
-        BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
-        RecyclerView eventsPreviewList = findViewById(R.id.eventsPreviewList);
-
-        eventsPreviewList.setLayoutManager(
-                new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
-
-        EventPreviewAdapter eventAdapter = new EventPreviewAdapter(event -> {
-            Intent intent = new Intent(this, EventsActivity.class);
-            startActivity(intent);
-        });
-
-        eventsPreviewList.setAdapter(eventAdapter);
-
+        initializeViews();
+        setupAdapters();
 
         // Load user data
         loadUserData();
 
         // Load events
-        loadSampleEvents(eventAdapter);
+        loadSampleEvents();
 
+        // Load recent sessions
+        loadRecentSessions();
+    }
+
+    private void initializeViews() {
+        // User stats views
+        pointsText = findViewById(R.id.pointsText);
+        levelText = findViewById(R.id.levelText);
+        rankText = findViewById(R.id.rankText);
+        sessionsText = findViewById(R.id.sessionsText);
+
+        // Event views
+        RecyclerView eventsPreviewList = findViewById(R.id.eventsPreviewList);
+        eventsPreviewList.setLayoutManager(
+                new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+
+        // Session views
+        try {
+            recentSessionsList = findViewById(R.id.recentSessionsList);
+            recentSessionsList.setLayoutManager(new LinearLayoutManager(this));
+
+            noSessionsText = findViewById(R.id.noSessionsText);
+            viewAllSessionsButton = findViewById(R.id.viewAllSessionsButton);
+        } catch (Exception e) {
+            Log.e(TAG, "Session history views not found", e);
+        }
+
+        MaterialButton startSessionButton = findViewById(R.id.startSessionButton);
+        BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
+
+        // Set up button clicks
         startSessionButton.setOnClickListener(v -> {
             Intent intent = new Intent(this, StudySessionActivity.class);
             startActivity(intent);
         });
 
+        if (viewAllSessionsButton != null) {
+            viewAllSessionsButton.setOnClickListener(v -> {
+                // Navigate to proper SessionHistoryActivity
+                Intent intent = new Intent(this, SessionHistoryActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        // Set up bottom navigation
+        bottomNav.setSelectedItemId(R.id.navigation_dashboard);
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.navigation_dashboard) {
@@ -84,7 +137,24 @@ public class DashboardActivity extends AppCompatActivity {
         });
     }
 
-    private void loadSampleEvents(EventPreviewAdapter adapter) {
+    private void setupAdapters() {
+        // Event adapter
+        eventAdapter = new EventPreviewAdapter(event -> {
+            Intent intent = new Intent(this, EventsActivity.class);
+            startActivity(intent);
+        });
+
+        RecyclerView eventsPreviewList = findViewById(R.id.eventsPreviewList);
+        eventsPreviewList.setAdapter(eventAdapter);
+
+        // Session adapter (if view exists)
+        if (recentSessionsList != null) {
+            sessionAdapter = new SessionHistoryAdapter(this);
+            recentSessionsList.setAdapter(sessionAdapter);
+        }
+    }
+
+    private void loadSampleEvents() {
         List<Event> events = new ArrayList<>();
         events.add(new Event(
                 "1",
@@ -108,19 +178,19 @@ public class DashboardActivity extends AppCompatActivity {
                 200,
                 R.drawable.ic_launcher_background
         ));
-        adapter.setEvents(events);
+        eventAdapter.setEvents(events);
     }
 
     private void loadUserData() {
         UserManager.getInstance().getCurrentUserData()
                 .addOnSuccessListener(user -> {
                     if (user != null) {
-                        pointsText.setText("Points: " + user.getPoints());
-                        levelText.setText("Level: " + calculateLevel(user.getPoints()));
-                        sessionsText.setText("Sessions: " + (user.getTotalStudyTime() / 60));
+                        pointsText.setText(String.valueOf(user.getPoints()));
+                        levelText.setText(String.valueOf(calculateLevel(user.getPoints())));
+                        sessionsText.setText(String.valueOf(user.getTotalStudyTime() / 60));
 
-                        // You might want to implement rank calculation later
-                        rankText.setText("Rank: #-");
+                        // todo: implement rank calculation later
+                        rankText.setText("#-");
                     }
                 })
                 .addOnFailureListener(e -> {
@@ -128,8 +198,93 @@ public class DashboardActivity extends AppCompatActivity {
                 });
     }
 
+    private void loadRecentSessions() {
+        // Check if views exist
+        if (recentSessionsList == null || noSessionsText == null) {
+            Log.w(TAG, "Session views not found, skipping session loading");
+            return;
+        }
+
+        // Check if user is logged in
+        if (auth.getCurrentUser() == null) {
+            noSessionsText.setVisibility(View.VISIBLE);
+            recentSessionsList.setVisibility(View.GONE);
+            return;
+        }
+
+        String userId = auth.getCurrentUser().getUid();
+
+        // Option 1: Just filter by hostId without ordering
+        db.collection("sessions")
+                .whereEqualTo("hostId", userId)
+                .limit(MAX_RECENT_SESSIONS)  // Still limit to 3
+                .get()  // Using get() instead of addSnapshotListener() to avoid index errors
+                .addOnCompleteListener(task -> {
+                    if (isDestroyed() || isFinishing()) return;
+
+                    if (task.isSuccessful()) {
+                        List<StudySession> sessions = new ArrayList<>();
+
+                        if (task.getResult().isEmpty()) {
+                            // No sessions found
+                            noSessionsText.setVisibility(View.VISIBLE);
+                            recentSessionsList.setVisibility(View.GONE);
+                            return;
+                        }
+
+                        // Process each session document
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            StudySession session = document.toObject(StudySession.class);
+                            sessions.add(session);
+                        }
+
+                        // Sort the results in memory instead of in the query
+                        Collections.sort(sessions, (a, b) -> {
+                            if (a.getStartTime() == null) return 1;
+                            if (b.getStartTime() == null) return -1;
+                            return b.getStartTime().compareTo(a.getStartTime());
+                        });
+
+                        // Limit to MAX_RECENT_SESSIONS
+                        if (sessions.size() > MAX_RECENT_SESSIONS) {
+                            sessions = sessions.subList(0, MAX_RECENT_SESSIONS);
+                        }
+
+                        // Update UI
+                        sessionAdapter.setSessions(sessions);
+                        noSessionsText.setVisibility(View.GONE);
+                        recentSessionsList.setVisibility(View.VISIBLE);
+
+                    } else {
+                        // Error loading sessions
+                        Log.e(TAG, "Error getting recent sessions: ", task.getException());
+                        noSessionsText.setVisibility(View.VISIBLE);
+                        recentSessionsList.setVisibility(View.GONE);
+                    }
+                });
+    }
+
     private int calculateLevel(int points) {
-        // TODO
         return Math.max(1, points / 1000 + 1);
+    }
+
+    @Override
+    public void onSessionClick(StudySession session) {
+        Intent intent = new Intent(this, SessionDetailsActivity.class);
+        intent.putExtra("session_id", session.getId());
+        startActivity(intent);
+    }
+
+    @Override
+    public void onDetailsClick(StudySession session) {
+        onSessionClick(session);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh data when returning to the dashboard
+        loadUserData();
+        loadRecentSessions();
     }
 }

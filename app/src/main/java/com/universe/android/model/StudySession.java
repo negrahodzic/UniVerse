@@ -14,6 +14,9 @@ public class StudySession {
     private int pointsAwarded;
     private boolean completed;
 
+    private int participantCount;
+    private int actualDurationSeconds;
+
     // Required for Firestore
     public StudySession() {
     }
@@ -97,15 +100,20 @@ public class StudySession {
      * Get the actual session duration in seconds based on start and end time
      * Returns -1 if end time is not set
      */
-    public int getActualDurationSeconds() {
-        if (startTime == null || endTime == null) {
-            return -1;
-        }
-
-        return (int) ((endTime.getTime() - startTime.getTime()) / 1000);
+    public int getParticipantCount() {
+        // If we have participants list, use its size, otherwise use stored count
+        return participants != null ? participants.size() : participantCount;
     }
 
-    public int getParticipantCount() {
-        return participants != null ? participants.size() : 0;
+    public void setParticipantCount(int participantCount) {
+        this.participantCount = participantCount;
+    }
+
+    public int getActualDurationSeconds() {
+        return actualDurationSeconds;
+    }
+
+    public void setActualDurationSeconds(int actualDurationSeconds) {
+        this.actualDurationSeconds = actualDurationSeconds;
     }
 }
