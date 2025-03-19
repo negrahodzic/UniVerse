@@ -34,7 +34,7 @@ public class EventService {
     private static final String TAG = "EventService";
 
     // Mac IP address where Docker is running
-    private static final String DOCKER_IP = "172.21.143.125";
+    private static final String DOCKER_IP = "172.22.140.90";
 
     private static final String API_PORT = "8080";
 

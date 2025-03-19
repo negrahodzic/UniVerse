@@ -27,6 +27,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseUser;
 import com.universe.android.manager.UserManager;
+import com.universe.android.util.StatsHelper;
 
 import com.bumptech.glide.Glide;
 
@@ -42,6 +43,12 @@ public class ProfileActivity extends AppCompatActivity {
     private TextView eventsAttendedText;
     private TextView pointsSpentText;
 
+    private TextView streakDaysText;
+    private TextView consistencyScoreText;
+    private TextView achievementsEarnedText;
+    private TextView friendsCountText;
+    private TextView lastActivityText;
+
     private MaterialButton logoutButton;
 
     private static final int PICK_IMAGE_REQUEST = 1;
@@ -49,9 +56,9 @@ public class ProfileActivity extends AppCompatActivity {
     private ImageView profileImage;
     private MaterialButton editUsernameButton;
     private MaterialButton changePasswordButton;
-    private MaterialButton changeOrgButton;
 
     private MaterialButton registerNfcIdButton;
+    private MaterialButton viewAchievementsButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,8 +77,12 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void initializeViews() {
+        // Basic profile info
         usernameText = findViewById(R.id.usernameText);
         organisationText = findViewById(R.id.organisationText);
+        profileImage = findViewById(R.id.profileImage);
+
+        // Stats fields
         totalPointsText = findViewById(R.id.totalPointsText);
         currentLevelText = findViewById(R.id.currentLevelText);
         globalRankText = findViewById(R.id.globalRankText);
@@ -80,12 +91,33 @@ public class ProfileActivity extends AppCompatActivity {
         avgSessionLengthText = findViewById(R.id.avgSessionLengthText);
         eventsAttendedText = findViewById(R.id.eventsAttendedText);
         pointsSpentText = findViewById(R.id.pointsSpentText);
+
+        // Try to find new stats fields if they exist in the layout
+        try {
+            streakDaysText = findViewById(R.id.streakDaysText);
+            consistencyScoreText = findViewById(R.id.consistencyScoreText);
+            achievementsEarnedText = findViewById(R.id.achievementsEarnedText);
+            friendsCountText = findViewById(R.id.friendsCountText);
+            lastActivityText = findViewById(R.id.lastActivityText);
+        } catch (Exception e) {
+            Log.d("ProfileActivity", "Some new stats fields not found in layout");
+        }
+
+        // Buttons
         logoutButton = findViewById(R.id.logoutButton);
-        profileImage = findViewById(R.id.profileImage);
         editUsernameButton = findViewById(R.id.editUsernameButton);
         changePasswordButton = findViewById(R.id.changePasswordButton);
-        changeOrgButton = findViewById(R.id.changeOrgButton);
         registerNfcIdButton = findViewById(R.id.registerNfcIdButton);
+
+        // Try to find view achievements button if it exists
+        try {
+            viewAchievementsButton = findViewById(R.id.viewAchievementsButton);
+            if (viewAchievementsButton != null) {
+                viewAchievementsButton.setOnClickListener(v -> showAchievementsScreen());
+            }
+        } catch (Exception e) {
+            Log.d("ProfileActivity", "View achievements button not found in layout");
+        }
 
         logoutButton.setOnClickListener(v -> logout());
         setupProfileImageClick();
@@ -93,27 +125,73 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void loadUserData() {
+        // Initialize user stats
+        UserManager.getInstance().initializeUserStats()
+                .addOnSuccessListener(aVoid -> {
+                    Log.d("ProfileActivity", "User stats initialized");
+                    // Now load user data
+                    loadUserDetails();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("ProfileActivity", "Error initializing user stats", e);
+                    // Still try to load user details
+                    loadUserDetails();
+                });
+    }
+
+    private void loadUserDetails() {
         UserManager.getInstance().getCurrentUserData().addOnSuccessListener(user -> {
             if (user != null) {
                 // Set basic info
                 usernameText.setText(user.getUsername());
                 organisationText.setText(user.getOrganisationId());
 
-                // Set stats
+                // Set standard stats
                 totalPointsText.setText(String.valueOf(user.getPoints()));
-                currentLevelText.setText(String.valueOf(calculateLevel(user.getPoints())));
-                globalRankText.setText("#-"); // TODO: Implement rank calculation
+                currentLevelText.setText(String.valueOf(user.calculateLevel()));
+                globalRankText.setText("#-"); // Placeholder for rank (to be implemented in leaderboard activity)
 
                 // Study stats
                 long totalHours = user.getTotalStudyTime() / 60; // Convert minutes to hours
                 totalHoursText.setText(String.valueOf(totalHours));
+                totalSessionsText.setText(String.valueOf(user.getSessionsCompleted()));
 
-                // Set other stats to 0 for now
-                totalSessionsText.setText("0");
-                avgSessionLengthText.setText("0h");
-                eventsAttendedText.setText("0");
-                pointsSpentText.setText("0");
+                // Calculate average session length
+                int avgMinutes = StatsHelper.calculateAvgSessionLength(
+                        user.getTotalStudyTime(), user.getSessionsCompleted());
+                avgSessionLengthText.setText(StatsHelper.formatStudyTime(avgMinutes));
 
+                // Event stats
+                eventsAttendedText.setText(String.valueOf(user.getEventsAttended()));
+                pointsSpentText.setText("0"); // Placeholder - could be calculated from tickets
+
+                // Set new enhanced stats if available in the layout
+                if (streakDaysText != null) {
+                    streakDaysText.setText(user.getStreakDays() + " days");
+                }
+
+                if (consistencyScoreText != null) {
+                    consistencyScoreText.setText(user.getConsistencyScore() + "%");
+                }
+
+                if (achievementsEarnedText != null) {
+                    achievementsEarnedText.setText(String.valueOf(user.getAchievementCount()));
+                }
+
+                if (friendsCountText != null) {
+                    friendsCountText.setText(String.valueOf(user.getFriendCount()));
+                }
+
+                if (lastActivityText != null) {
+                    String lastActivity = "Never";
+                    if (user.getLastStudyDate() > 0) {
+                        lastActivity = StatsHelper.formatDate(
+                                user.getLastStudyDate(), "MMM d, yyyy");
+                    }
+                    lastActivityText.setText(lastActivity);
+                }
+
+                // Load profile image if available
                 if (user.getProfileImageBase64() != null && !user.getProfileImageBase64().isEmpty()) {
                     // Convert Base64 to Bitmap
                     byte[] decodedString = Base64.decode(user.getProfileImageBase64(), Base64.DEFAULT);
@@ -127,12 +205,10 @@ public class ProfileActivity extends AppCompatActivity {
         });
     }
 
-    private int calculateLevel(int points) {
-        return Math.max(1, points / 1000 + 1);
-    }
-
     private void setupBottomNavigation() {
         BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
+        bottomNav.setSelectedItemId(R.id.navigation_profile);
+
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.navigation_dashboard) {
@@ -143,6 +219,9 @@ public class ProfileActivity extends AppCompatActivity {
                 return true;
             } else if (itemId == R.id.navigation_events) {
                 startActivity(new Intent(this, EventsActivity.class));
+                return true;
+            } else if (itemId == R.id.navigation_leaderboard) {
+                startActivity(new Intent(this, LeaderboardActivity.class));
                 return true;
             } else if (itemId == R.id.navigation_profile) {
                 return true;
@@ -172,7 +251,16 @@ public class ProfileActivity extends AppCompatActivity {
         registerNfcIdButton.setOnClickListener(v -> showRegisterNfcIdDialog());
         editUsernameButton.setOnClickListener(v -> showUsernameDialog());
         changePasswordButton.setOnClickListener(v -> showPasswordDialog());
-        changeOrgButton.setOnClickListener(v -> showOrganisationDialog());
+    }
+
+    /**
+     * Show achievements screen (to be implemented)
+     */
+    private void showAchievementsScreen() {
+        Toast.makeText(this, "Achievements feature coming soon!", Toast.LENGTH_SHORT).show();
+        // This would typically launch an achievements activity
+        // Intent intent = new Intent(this, AchievementsActivity.class);
+        // startActivity(intent);
     }
 
     private void showUsernameDialog() {
@@ -235,8 +323,6 @@ public class ProfileActivity extends AppCompatActivity {
             Log.e("ProfileActivity", "Error updating username", e);
         });
     }
-
-
 
     private void updateNfcId(String newNfcId) {
         UserManager.getInstance().updateNfcId(newNfcId).addOnSuccessListener(aVoid -> {
@@ -313,4 +399,10 @@ public class ProfileActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh user data when returning to profile screen
+        loadUserData();
+    }
 }

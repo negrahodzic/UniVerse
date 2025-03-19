@@ -16,6 +16,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.universe.android.R;
 import com.universe.android.model.Participant;
 import com.universe.android.model.User;
+import com.universe.android.util.StatsHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -118,8 +119,7 @@ public class ParticipantAdapter extends RecyclerView.Adapter<ParticipantAdapter.
         }
 
         private int calculateLevel(int points) {
-            // level calculation: 1 level per 200 points, minimum level 1
-            return Math.max(1, (points / 200) + 1);
+            return StatsHelper.calculateLevel(points);
         }
     }
 

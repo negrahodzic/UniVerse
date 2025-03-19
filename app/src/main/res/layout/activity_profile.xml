@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/main"
     android:layout_width="match_parent"
@@ -26,7 +25,9 @@
     <androidx.core.widget.NestedScrollView
         android:id="@+id/NestedScrollView"
         android:layout_width="match_parent"
-        android:layout_height="592dp"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="56dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
@@ -140,6 +141,91 @@
                         android:layout_columnWeight="1"
                         android:padding="8dp"
                         android:text="#42" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:padding="8dp"
+                        android:text="Achievements Earned"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/achievementsEarnedText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:padding="8dp"
+                        android:text="3" />
+                </GridLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Study Progress -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Study Progress"
+                android:textAppearance="?attr/textAppearanceHeadline6" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp">
+
+                <GridLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:columnCount="2"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:padding="8dp"
+                        android:text="Current Streak"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/streakDaysText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:padding="8dp"
+                        android:text="5 days" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:padding="8dp"
+                        android:text="Consistency Score"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/consistencyScoreText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:padding="8dp"
+                        android:text="75%" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:padding="8dp"
+                        android:text="Last Activity"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/lastActivityText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:padding="8dp"
+                        android:text="Mar 15, 2025" />
                 </GridLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -212,23 +298,40 @@
                 </GridLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Event Statistics -->
+            <!-- Social Stats -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:text="Event Statistics"
+                android:text="Social Statistics"
                 android:textAppearance="?attr/textAppearanceHeadline6" />
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp">
 
                 <GridLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:columnCount="2"
                     android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:padding="8dp"
+                        android:text="Friends"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/friendsCountText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:padding="8dp"
+                        android:text="12" />
 
                     <TextView
                         android:layout_width="0dp"
@@ -264,46 +367,58 @@
                 </GridLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Button to view achievements -->
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/registerNfcIdButton"
+                android:id="@+id/viewAchievementsButton"
+                style="@style/Widget.MaterialComponents.Button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Register NFC card"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+                android:layout_marginTop="8dp"
+                android:text="View Achievements" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/editUsernameButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Edit Username"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/changePasswordButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Change Password"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/changeOrgButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Change Organisation"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/logoutButton"
+            <!-- Account settings header -->
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Logout"
+                android:layout_marginBottom="8dp"
+                android:text="Account Settings"
+                android:textAppearance="?attr/textAppearanceHeadline6" />
+
+            <!-- Account management buttons -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/registerNfcIdButton"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:textColor="?attr/colorError"/>
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Register NFC card" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/editUsernameButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Edit Username" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/changePasswordButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Change Password" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/logoutButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="24dp"
+                android:text="Logout"
+                />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

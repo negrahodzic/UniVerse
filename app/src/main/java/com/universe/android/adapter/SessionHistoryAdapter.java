@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.button.MaterialButton;
 import com.universe.android.R;
 import com.universe.android.model.StudySession;
+import com.universe.android.util.StatsHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -95,24 +96,21 @@ public class SessionHistoryAdapter extends RecyclerView.Adapter<SessionHistoryAd
             String formattedDate = session.getStartTime() != null ?
                     dateFormat.format(session.getStartTime()) : "Unknown date";
 
-            // Format the duration
-            String durationText;
-            if (session.getDurationSeconds() < 60) {
-                durationText = session.getDurationSeconds() + " seconds"; // For testing
-            } else {
-                int minutes = session.getDurationSeconds() / 60;
-                if (minutes < 60) {
-                    durationText = minutes + " minutes";
-                } else {
-                    int hours = minutes / 60;
-                    int remainingMinutes = minutes % 60;
-                    durationText = hours + "h " + (remainingMinutes > 0 ? remainingMinutes + "m" : "");
-                }
-            }
+            // Format the duration using helper
+            String durationText = StatsHelper.formatSessionDuration(session.getDurationSeconds());
 
             // Set the views
             sessionDate.setText(formattedDate);
-            sessionPoints.setText("+" + session.getPointsAwarded() + " points");
+
+            // Update points display based on completion status
+            if (session.isCompleted()) {
+                sessionPoints.setText("+" + session.getPointsAwarded() + " points");
+                sessionPoints.setTextColor(itemView.getContext().getResources().getColor(android.R.color.holo_green_dark));
+            } else {
+                sessionPoints.setText("0 points");
+                sessionPoints.setTextColor(itemView.getContext().getResources().getColor(android.R.color.holo_red_light));
+            }
+
             sessionDuration.setText(durationText);
 
             // Set participants count

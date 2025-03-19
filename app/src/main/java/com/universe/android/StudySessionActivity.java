@@ -125,7 +125,12 @@ public class StudySessionActivity extends AppCompatActivity {
                 Intent intent = new Intent(this, EventsActivity.class);
                 startActivity(intent);
                 return true;
-            } else if (itemId == R.id.navigation_profile) {
+            } else if (itemId == R.id.navigation_leaderboard) {
+                Intent intent = new Intent(this, LeaderboardActivity.class);
+                startActivity(intent);
+                return true;
+            }
+            else if (itemId == R.id.navigation_profile) {
                 Intent intent = new Intent(this, ProfileActivity.class);
                 startActivity(intent);
                 return true;

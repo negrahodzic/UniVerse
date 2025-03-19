@@ -65,17 +65,21 @@
 
                         <!-- Points -->
                         <LinearLayout
+                            android:id="@+id/pointsContainer"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:gravity="center"
-                            android:orientation="vertical">
+                            android:orientation="vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground">
 
                             <TextView
                                 android:id="@+id/pointsText"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="500"
+                                android:text="0"
                                 android:textColor="@color/design_default_color_primary"
                                 android:textSize="24sp"
                                 android:textStyle="bold" />
@@ -89,17 +93,21 @@
 
                         <!-- Level -->
                         <LinearLayout
+                            android:id="@+id/levelContainer"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:gravity="center"
-                            android:orientation="vertical">
+                            android:orientation="vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground">
 
                             <TextView
                                 android:id="@+id/levelText"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="3"
+                                android:text="0"
                                 android:textColor="@color/design_default_color_primary"
                                 android:textSize="24sp"
                                 android:textStyle="bold" />
@@ -113,17 +121,21 @@
 
                         <!-- Rank -->
                         <LinearLayout
+                            android:id="@+id/rankContainer"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:gravity="center"
-                            android:orientation="vertical">
+                            android:orientation="vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground">
 
                             <TextView
                                 android:id="@+id/rankText"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="#5"
+                                android:text="0"
                                 android:textColor="@color/design_default_color_primary"
                                 android:textSize="24sp"
                                 android:textStyle="bold" />
@@ -137,17 +149,21 @@
 
                         <!-- Sessions -->
                         <LinearLayout
+                            android:id="@+id/sessionsContainer"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:gravity="center"
-                            android:orientation="vertical">
+                            android:orientation="vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground">
 
                             <TextView
                                 android:id="@+id/sessionsText"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="12"
+                                android:text="0"
                                 android:textColor="@color/design_default_color_primary"
                                 android:textSize="24sp"
                                 android:textStyle="bold" />
@@ -208,7 +224,10 @@
                     android:layout_height="wrap_content"
                     android:padding="8dp"
                     android:text="View All"
-                    android:textColor="@color/design_default_color_primary" />
+                    android:textColor="@color/design_default_color_primary"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground" />
             </LinearLayout>
 
             <!-- Recent Sessions List (limited to 3) -->

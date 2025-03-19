@@ -49,6 +49,7 @@ public class EventDetailActivity extends AppCompatActivity implements OnMapReady
     private int ticketQuantity = 1;
     private int userPoints = 0;
     private EventService eventService;
+    private UserManager userManager;
 
     // Map
     private GoogleMap googleMap;
@@ -58,8 +59,9 @@ public class EventDetailActivity extends AppCompatActivity implements OnMapReady
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event_detail);
 
-        // Initialize service
+        // Initialize services
         eventService = new EventService(this);
+        userManager = UserManager.getInstance();
 
         // Get event from intent
         event = (Event) getIntent().getSerializableExtra("event");
@@ -225,6 +227,16 @@ public class EventDetailActivity extends AppCompatActivity implements OnMapReady
         eventService.bookEvent(event.getId(), ticketQuantity, new EventService.BookingCallback() {
             @Override
             public void onSuccess(Ticket ticket) {
+                // Update user's event attendance counter and check for achievements
+                userManager.updateEventAttendance(EventDetailActivity.this)
+                        .addOnSuccessListener(aVoid -> {
+                            Log.d(TAG, "Successfully updated event attendance");
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e(TAG, "Error updating event attendance", e);
+                            // Continue with ticket creation even if stats update fails
+                        });
+
                 // Deduct points from user
                 int totalCost = event.getPointsPrice() * ticketQuantity;
                 UserManager.getInstance().getCurrentUserData().addOnSuccessListener(user -> {

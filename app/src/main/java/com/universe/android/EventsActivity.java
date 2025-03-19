@@ -51,6 +51,10 @@ public class EventsActivity extends AppCompatActivity {
                 return true;
             } else if (itemId == R.id.navigation_events) {
                 return true;
+            } else if (itemId == R.id.navigation_leaderboard) {
+                Intent intent = new Intent(this, LeaderboardActivity.class);
+                startActivity(intent);
+                return true;
             } else if (itemId == R.id.navigation_profile) {
                 Intent intent = new Intent(this, ProfileActivity.class);
                 startActivity(intent);

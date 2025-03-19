@@ -15,8 +15,8 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.google.android.material.button.MaterialButton;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.universe.android.adapter.ParticipantAdapter;
 import com.universe.android.manager.UserManager;
@@ -48,6 +48,7 @@ public class ActiveSessionActivity extends AppCompatActivity {
     private int duration;
     private int points;
     private FirebaseFirestore db;
+    private UserManager userManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,8 +56,9 @@ public class ActiveSessionActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_active_session);
 
-        // Initialize Firestore
+        // Initialize Firestore and UserManager
         db = FirebaseFirestore.getInstance();
+        userManager = UserManager.getInstance();
 
         // Initialize views
         timerText = findViewById(R.id.timerText);
@@ -215,23 +217,48 @@ public class ActiveSessionActivity extends AppCompatActivity {
                             })
                             .collect(Collectors.toList());
 
-                    // Award points using UserManager
-                    UserManager.getInstance()
-                            .awardSessionPoints(participants, points)
-                            .addOnSuccessListener(aVoid -> {
-                                Log.d(TAG, "Successfully awarded points to all participants");
-                                finish();
-                            })
-                            .addOnFailureListener(e -> {
-                                Log.e(TAG, "Error awarding points: " + e.getMessage());
-                                Toast.makeText(this,
-                                        "Error awarding points. Please contact support.",
-                                        Toast.LENGTH_LONG).show();
-                                finish();
-                            });
+                    // Award points and update stats for all participants
+                    updateParticipantStats(participants);
                 })
                 .setCancelable(false)
                 .show();
+    }
+
+    private void updateParticipantStats(List<String> participants) {
+        // Get the actual duration in minutes (needed for stats)
+        int durationMinutes = duration < 60 ? 1 : duration / 60; // Minimum 1 minute
+
+        // Clean up participant names - trim spaces
+        List<String> cleanedParticipants = participants.stream()
+                .map(String::trim)  // remove any whitespace
+                .collect(Collectors.toList());
+
+        Log.d(TAG, "Participants (cleaned): " + cleanedParticipants.toString());
+
+        // First, award session points to all participants
+        userManager.awardSessionPoints(cleanedParticipants, points)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Successfully awarded points to all participants");
+
+                    // Then, update stats for current user only (EXCEPT points which were already awarded)
+                    userManager.updateStatsAfterSession(this, 0, durationMinutes)
+                            .addOnSuccessListener(statsVoid -> {
+                                Log.d(TAG, "Successfully updated user stats");
+                                finish();
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "Error updating user stats", e);
+                                // Still finish activity even if stats update fails
+                                finish();
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error awarding points: " + e.getMessage());
+                    Toast.makeText(this,
+                            "Error awarding points. Please contact support.",
+                            Toast.LENGTH_LONG).show();
+                    finish();
+                });
     }
 
     private void completeStudySession() {

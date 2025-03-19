@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.universe.android.adapter.EventPreviewAdapter;
@@ -22,6 +23,8 @@ import com.universe.android.adapter.SessionHistoryAdapter;
 import com.universe.android.manager.UserManager;
 import com.universe.android.model.Event;
 import com.universe.android.model.StudySession;
+import com.universe.android.model.User;
+import com.universe.android.util.StatsHelper;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,6 +52,7 @@ public class DashboardActivity extends AppCompatActivity implements SessionHisto
     // Firebase
     private FirebaseFirestore db;
     private FirebaseAuth auth;
+    private UserManager userManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,9 +60,10 @@ public class DashboardActivity extends AppCompatActivity implements SessionHisto
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_dashboard);
 
-        // Initialize Firebase
+        // Initialize Firebase and UserManager
         db = FirebaseFirestore.getInstance();
         auth = FirebaseAuth.getInstance();
+        userManager = UserManager.getInstance();
 
         // Initialize views
         initializeViews();
@@ -81,6 +86,12 @@ public class DashboardActivity extends AppCompatActivity implements SessionHisto
         rankText = findViewById(R.id.rankText);
         sessionsText = findViewById(R.id.sessionsText);
 
+        // Find the container views for each statistic by their IDs
+        View pointsContainer = findViewById(R.id.pointsContainer);
+        View levelContainer = findViewById(R.id.levelContainer);
+        View rankContainer = findViewById(R.id.rankContainer);
+        View sessionsContainer = findViewById(R.id.sessionsContainer);
+
         // Event views
         RecyclerView eventsPreviewList = findViewById(R.id.eventsPreviewList);
         eventsPreviewList.setLayoutManager(
@@ -100,6 +111,39 @@ public class DashboardActivity extends AppCompatActivity implements SessionHisto
         MaterialButton startSessionButton = findViewById(R.id.startSessionButton);
         BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
 
+        // Set up stat containers click listeners
+        if (pointsContainer != null) {
+            pointsContainer.setOnClickListener(v -> {
+                // Navigate to Profile
+                Intent intent = new Intent(this, ProfileActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        if (levelContainer != null) {
+            levelContainer.setOnClickListener(v -> {
+                // Navigate to Profile
+                Intent intent = new Intent(this, ProfileActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        if (rankContainer != null) {
+            rankContainer.setOnClickListener(v -> {
+                // Navigate to Leaderboard
+                Intent intent = new Intent(this, LeaderboardActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        if (sessionsContainer != null) {
+            sessionsContainer.setOnClickListener(v -> {
+                // Navigate to Session History
+                Intent intent = new Intent(this, SessionHistoryActivity.class);
+                startActivity(intent);
+            });
+        }
+
         // Set up button clicks
         startSessionButton.setOnClickListener(v -> {
             Intent intent = new Intent(this, StudySessionActivity.class);
@@ -118,21 +162,25 @@ public class DashboardActivity extends AppCompatActivity implements SessionHisto
         bottomNav.setSelectedItemId(R.id.navigation_dashboard);
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
+            Intent intent = null;
+
             if (itemId == R.id.navigation_dashboard) {
                 return true;
             } else if (itemId == R.id.navigation_study) {
-                Intent intent = new Intent(this, StudySessionActivity.class);
-                startActivity(intent);
-                return true;
+                intent = new Intent(this, StudySessionActivity.class);
             } else if (itemId == R.id.navigation_events) {
-                Intent intent = new Intent(this, EventsActivity.class);
-                startActivity(intent);
-                return true;
+                intent = new Intent(this, EventsActivity.class);
+            } else if (itemId == R.id.navigation_leaderboard) {
+                intent = new Intent(this, LeaderboardActivity.class);
             } else if (itemId == R.id.navigation_profile) {
-                Intent intent = new Intent(this, ProfileActivity.class);
+                intent = new Intent(this, ProfileActivity.class);
+            }
+
+            if (intent != null) {
                 startActivity(intent);
                 return true;
             }
+
             return false;
         });
     }
@@ -182,19 +230,67 @@ public class DashboardActivity extends AppCompatActivity implements SessionHisto
     }
 
     private void loadUserData() {
-        UserManager.getInstance().getCurrentUserData()
-                .addOnSuccessListener(user -> {
-                    if (user != null) {
-                        pointsText.setText(String.valueOf(user.getPoints()));
-                        levelText.setText(String.valueOf(calculateLevel(user.getPoints())));
-                        sessionsText.setText(String.valueOf(user.getTotalStudyTime() / 60));
+        // Initialize user stats then load data
+        userManager.initializeUserStats()
+                .addOnSuccessListener(aVoid -> {
+                    // Now load current user data
+                    userManager.getCurrentUserData()
+                            .addOnSuccessListener(user -> {
+                                if (user != null) {
+                                    updateDashboardStats(user);
+                                }
+                            })
+                            .addOnFailureListener(e -> {
+                                Toast.makeText(this, "Failed to load user data", Toast.LENGTH_SHORT).show();
+                            });
+                });
+    }
 
-                        // todo: implement rank calculation later
-                        rankText.setText("#-");
+    private void updateDashboardStats(User user) {
+        // Set points
+        pointsText.setText(String.valueOf(user.getPoints()));
+
+        // Set level (calculate from points)
+        int level = StatsHelper.calculateLevel(user.getPoints());
+        levelText.setText(String.valueOf(level));
+
+        // Set completed sessions count (only successful ones)
+        sessionsText.setText(String.valueOf(user.getCompletedSessions()));
+
+        // Then query for actual rank if we have an organization ID
+        if (user.getOrganisationId() != null && !user.getOrganisationId().isEmpty()) {
+            loadUserRank(user.getUid(), user.getOrganisationId());
+        }
+    }
+
+    private void loadUserRank(String userId, String orgId) {
+        db.collection("users")
+                .whereEqualTo("organisationId", orgId)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        return;
+                    }
+
+                    List<User> users = new ArrayList<>();
+                    for (DocumentSnapshot doc : queryDocumentSnapshots) {
+                        users.add(doc.toObject(User.class));
+                    }
+
+                    Collections.sort(users, (u1, u2) -> Integer.compare(u2.getPoints(), u1.getPoints()));
+
+                    int rank = 1;
+                    for (User user : users) {
+                        if (user.getUid().equals(userId)) {
+                            // Found the user, set rank
+                            rankText.setText("#" + rank);
+                            break;
+                        }
+                        rank++;
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Failed to load user data", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Error loading rank", e);
                 });
     }
 
@@ -264,10 +360,6 @@ public class DashboardActivity extends AppCompatActivity implements SessionHisto
                 });
     }
 
-    private int calculateLevel(int points) {
-        return Math.max(1, points / 1000 + 1);
-    }
-
     @Override
     public void onSessionClick(StudySession session) {
         Intent intent = new Intent(this, SessionDetailsActivity.class);
@@ -287,4 +379,5 @@ public class DashboardActivity extends AppCompatActivity implements SessionHisto
         loadUserData();
         loadRecentSessions();
     }
+
 }
