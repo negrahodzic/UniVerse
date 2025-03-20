@@ -1,27 +1,27 @@
 package com.universe.android;
 
+import static android.content.ContentValues.TAG;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.universe.android.adapter.ParticipantAdapter;
 import com.universe.android.model.Participant;
 import com.universe.android.model.StudySession;
 import com.universe.android.repository.SessionRepository;
 import com.universe.android.repository.UserRepository;
 import com.universe.android.util.NfcUtil;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -34,6 +34,7 @@ public class WaitingRoomActivity extends AppCompatActivity implements NfcUtil.Nf
     private TextView settingsText;
     private RecyclerView participantsList;
     private MaterialButton startButton;
+    private MaterialButton showQrCodeButton;
     private ParticipantAdapter participantAdapter;
 
     private NfcAdapter nfcAdapter;
@@ -44,8 +45,12 @@ public class WaitingRoomActivity extends AppCompatActivity implements NfcUtil.Nf
     private SessionRepository sessionRepository;
 
     // Session settings
-    private int duration; // in seconds for testing
-    private int points;   // points rewarded for this session
+    private int duration;
+    private int points;
+
+    private boolean isSessionCreated = false;
+
+    private ListenerRegistration sessionListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,8 +72,8 @@ public class WaitingRoomActivity extends AppCompatActivity implements NfcUtil.Nf
 
         // Get session settings from intent
         Intent intent = getIntent();
-        duration = intent.getIntExtra("duration", 3); // Default to 3 seconds for testing
-        points = intent.getIntExtra("points", 20);   // Default to 20 points
+        duration = intent.getIntExtra("duration", 3);
+        points = intent.getIntExtra("points", 20);
 
         // Generate session ID
         sessionId = generateSessionId();
@@ -78,7 +83,15 @@ public class WaitingRoomActivity extends AppCompatActivity implements NfcUtil.Nf
         setupParticipantsList();
         updateSessionInfo();
 
+        // Pre-create session document AFTER participants are set up
+        userRepository.getCurrentUserData().addOnSuccessListener(user -> {
+            if (user != null) {
+                createStudySessionRecord();
+            }
+        });
+
         startButton.setOnClickListener(v -> startSession());
+        showQrCodeButton.setOnClickListener(v -> showSessionQrCode());
     }
 
     private void initializeViews() {
@@ -87,6 +100,7 @@ public class WaitingRoomActivity extends AppCompatActivity implements NfcUtil.Nf
         settingsText = findViewById(R.id.settingsText);
         participantsList = findViewById(R.id.participantsList);
         startButton = findViewById(R.id.startButton);
+        showQrCodeButton = findViewById(R.id.showQrCodeButton);
 
         setSupportActionBar(toolbar);
         toolbar.setNavigationOnClickListener(v -> finish());
@@ -97,7 +111,6 @@ public class WaitingRoomActivity extends AppCompatActivity implements NfcUtil.Nf
         participantsList.setLayoutManager(new LinearLayoutManager(this));
         participantsList.setAdapter(participantAdapter);
 
-        // Get current user data to add host with actual username
         userRepository.getCurrentUserData().addOnSuccessListener(user -> {
             if (user != null) {
                 // Add host as first participant with actual username
@@ -108,8 +121,88 @@ public class WaitingRoomActivity extends AppCompatActivity implements NfcUtil.Nf
 
                 participants.add(hostParticipant);
                 participantAdapter.setParticipants(participants);
+
+                // Ensure session is created before setting up listener
+                createStudySessionRecord();
+
+                // Set up real-time listener for session updates
+                setupSessionUpdateListener();
             }
         });
+    }
+
+    private void setupSessionUpdateListener() {
+        sessionListener = sessionRepository.listenToSessionUpdates(sessionId, session -> {
+            // Ensure the session is not null and has participants
+            if (session != null && session.getParticipants() != null) {
+                List<Participant> updatedParticipants = new ArrayList<>();
+                for (Map<String, String> participantMap : session.getParticipants()) {
+                    // Add (Host) tag for the host
+                    String displayName = participantMap.get("username") +
+                            (participantMap.get("userId").equals(session.getHostId()) ? " (Host)" : "");
+
+                    Participant participant = new Participant(displayName, true);
+                    participant.setUserId(participantMap.get("userId"));
+                    participant.setActualUsername(participantMap.get("username"));
+                    participant.setNfcId(participantMap.get("nfcId"));
+                    updatedParticipants.add(participant);
+                }
+
+                runOnUiThread(() -> {
+                    participantAdapter.setParticipants(updatedParticipants);
+                });
+            }
+        });
+    }
+
+    private void createStudySessionRecord() {
+        if (isSessionCreated) return;
+
+        String currentUserId = userRepository.getCurrentUserId();
+        if (currentUserId == null) return;
+
+        // Ensure participants adapter is not null and has participants
+        if (participantAdapter == null || participantAdapter.getParticipants().isEmpty()) {
+            Log.e(TAG, "Participants not initialized");
+            return;
+        }
+
+        // Create participants list
+        List<Map<String, String>> participants = new ArrayList<>();
+        for (Participant p : participantAdapter.getParticipants()) {
+            Map<String, String> participantMap = new HashMap<>();
+            participantMap.put("userId", p.getUserId());
+            participantMap.put("username", p.getActualUsername());
+            participantMap.put("nfcId", p.getNfcId());
+            participants.add(participantMap);
+        }
+
+        // Create study session object
+        StudySession studySession = new StudySession(
+                sessionId,
+                currentUserId,
+                participants,
+                new Date(),
+                duration
+        );
+        studySession.setCompleted(false);
+
+        // Set points to be awarded
+        studySession.setPointsAwarded(points);
+
+        // Save to Firestore using repository
+        sessionRepository.createSession(studySession)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Session pre-created: " + sessionId);
+                    isSessionCreated = true;
+                    showQrCodeButton.setEnabled(true);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to pre-create session: " + e.getMessage());
+                    Toast.makeText(this, "Failed to create session", Toast.LENGTH_SHORT).show();
+                    showQrCodeButton.setEnabled(false);
+                    isSessionCreated = false;
+                });
     }
 
     private void updateSessionInfo() {
@@ -117,8 +210,8 @@ public class WaitingRoomActivity extends AppCompatActivity implements NfcUtil.Nf
 
         // Create a simplified settings text
         String durationText = (duration < 60) ?
-                duration + " seconds" : // For testing use seconds
-                (duration / 60) + " minutes"; // For production use minutes
+                duration + " seconds" :
+                (duration / 60) + " minutes";
 
         settingsText.setText("Duration: " + durationText + "\n" +
                 "Points reward: " + points + " points");
@@ -126,6 +219,18 @@ public class WaitingRoomActivity extends AppCompatActivity implements NfcUtil.Nf
 
     private String generateSessionId() {
         return UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+    }
+
+    private void showSessionQrCode() {
+        userRepository.getCurrentUserData().addOnSuccessListener(user -> {
+            if (user != null) {
+                Intent intent = new Intent(this, SessionQrActivity.class);
+                intent.putExtra("sessionId", sessionId);
+                intent.putExtra("hostId", user.getUid());
+                intent.putExtra("hostUsername", user.getUsername());
+                startActivity(intent);
+            }
+        });
     }
 
     @Override
@@ -184,11 +289,26 @@ public class WaitingRoomActivity extends AppCompatActivity implements NfcUtil.Nf
                 Participant newParticipant = new Participant(participantName, true);
                 newParticipant.setUserId(userId);
                 newParticipant.setNfcId(serialNumber);
-                newParticipant.setActualUsername(participantName);  // Store actual username
+                newParticipant.setActualUsername(participantName);
 
-                currentParticipants.add(newParticipant);
-                participantAdapter.setParticipants(currentParticipants);
-                Toast.makeText(this, participantName + " joined!", Toast.LENGTH_SHORT).show();
+                // Create participant data for Firestore
+                Map<String, String> participantMap = new HashMap<>();
+                participantMap.put("userId", userId);
+                participantMap.put("username", participantName);
+                participantMap.put("nfcId", serialNumber);
+
+                // Add to Firestore first, then update local UI
+                sessionRepository.addParticipantToSession(sessionId, participantMap)
+                        .addOnSuccessListener(aVoid -> {
+                            // Update local list after successful Firebase update
+                            currentParticipants.add(newParticipant);
+                            participantAdapter.setParticipants(currentParticipants);
+                            Toast.makeText(WaitingRoomActivity.this, participantName + " joined!", Toast.LENGTH_SHORT).show();
+                        })
+                        .addOnFailureListener(e -> {
+                            Toast.makeText(WaitingRoomActivity.this, "Error adding participant: " + e.getMessage(),
+                                    Toast.LENGTH_SHORT).show();
+                        });
             }
         }).addOnFailureListener(e -> {
             Toast.makeText(this, "Error reading NFC tag: " + e.getMessage(),
@@ -197,60 +317,49 @@ public class WaitingRoomActivity extends AppCompatActivity implements NfcUtil.Nf
     }
 
     private void startSession() {
-        // Create study session record in Firestore
-        createStudySessionRecord();
+        // Update the session in Firestore to mark it as started
+        sessionRepository.startSession(sessionId)
+                .addOnSuccessListener(aVoid -> {
+                    // Get the latest session data from Firestore to ensure all participants are included
+                    sessionRepository.getSessionById(sessionId)
+                            .addOnSuccessListener(session -> {
+                                // Start the active session activity for the host
+                                Intent intent = new Intent(this, ActiveSessionActivity.class);
+                                intent.putExtra("sessionId", sessionId);
+                                intent.putExtra("duration", duration);
+                                intent.putExtra("points", points);
 
-        // Start the active session activity
-        Intent intent = new Intent(this, ActiveSessionActivity.class);
-        intent.putExtra("sessionId", sessionId);
-        intent.putExtra("duration", duration);
-        intent.putExtra("points", points);
+                                // Convert participants from Firestore to a serializable format
+                                ArrayList<HashMap<String, String>> participantData = new ArrayList<>();
+                                if (session != null && session.getParticipants() != null) {
+                                    for (Map<String, String> participantMap : session.getParticipants()) {
+                                        HashMap<String, String> data = new HashMap<>();
+                                        data.put("name", participantMap.get("username"));
+                                        data.put("userId", participantMap.get("userId"));
+                                        data.put("actualUsername", participantMap.get("username"));
+                                        participantData.add(data);
+                                    }
+                                }
 
-        // Convert participants to a serializable format
-        ArrayList<HashMap<String, String>> participantData = new ArrayList<>();
-        for (Participant p : participantAdapter.getParticipants()) {
-            HashMap<String, String> data = new HashMap<>();
-            data.put("name", p.getName());
-            data.put("userId", p.getUserId());
-            data.put("actualUsername", p.getActualUsername());
-            participantData.add(data);
-        }
-
-        intent.putExtra("participantData", participantData);
-        startActivity(intent);
-        finish();
+                                intent.putExtra("participantData", participantData);
+                                intent.putExtra("isParticipant", false); // Host is starting the session
+                                startActivity(intent);
+                                finish();
+                            })
+                            .addOnFailureListener(e -> {
+                                Toast.makeText(this, "Failed to get updated session data", Toast.LENGTH_SHORT).show();
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to start session", Toast.LENGTH_SHORT).show();
+                });
     }
 
-    private void createStudySessionRecord() {
-        String currentUserId = userRepository.getCurrentUserId();
-        if (currentUserId == null) return;
-
-        // Create participants list
-        List<Map<String, String>> participants = new ArrayList<>();
-        for (Participant p : participantAdapter.getParticipants()) {
-            Map<String, String> participantMap = new HashMap<>();
-            participantMap.put("userId", p.getUserId());
-            participantMap.put("username", p.getActualUsername());
-            participantMap.put("nfcId", p.getNfcId());
-            participants.add(participantMap);
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (sessionListener != null) {
+            sessionListener.remove();
         }
-
-        // Create study session object
-        StudySession studySession = new StudySession(
-                sessionId,
-                currentUserId,
-                participants,
-                new Date(),
-                duration
-        );
-
-        // Set points to be awarded
-        studySession.setPointsAwarded(points);
-
-        // Save to Firestore using repository
-        sessionRepository.createSession(studySession)
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Failed to record session: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
     }
 }

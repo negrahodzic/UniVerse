@@ -17,7 +17,8 @@ public class StudySession {
     private int participantCount;
     private int actualDurationSeconds;
 
-    // Required for Firestore
+    private boolean started = false;
+
     public StudySession() {
     }
 
@@ -115,5 +116,13 @@ public class StudySession {
 
     public void setActualDurationSeconds(int actualDurationSeconds) {
         this.actualDurationSeconds = actualDurationSeconds;
+    }
+
+    public boolean isStarted() {
+        return started;
+    }
+
+    public void setStarted(boolean started) {
+        this.started = started;
     }
 }

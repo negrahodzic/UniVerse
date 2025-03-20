@@ -2,19 +2,26 @@ package com.universe.android;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
+import com.journeyapps.barcodescanner.ScanOptions;
+import com.universe.android.util.QrCodeUtil;
 
-public class StudySessionActivity extends AppCompatActivity {
+import org.json.JSONException;
+import org.json.JSONObject;
+
+public class StudySessionActivity extends AppCompatActivity implements QrCodeUtil.QrScanCallback {
     private CircularProgressIndicator timeSelector;
     private TextView timeSelectionText;
     private TextView pointsInfoText;
@@ -23,6 +30,7 @@ public class StudySessionActivity extends AppCompatActivity {
     private LinearLayout time9Button;
     private LinearLayout time12Button;
     private MaterialButton createSessionButton;
+    private MaterialButton joinSessionButton;
 
     // Time presets for testing in seconds
     private static final int TIME_3_SEC = 3;
@@ -39,6 +47,9 @@ public class StudySessionActivity extends AppCompatActivity {
     // Currently selected duration (in seconds for testing)
     private int selectedDuration = TIME_3_SEC;
     private int selectedPoints = POINTS_3_SEC;
+
+    // QR code scanner
+    private ActivityResultLauncher<ScanOptions> qrScanLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,6 +68,9 @@ public class StudySessionActivity extends AppCompatActivity {
 
         // Initialize with default selection
         updateDurationSelection(TIME_3_SEC, POINTS_3_SEC);
+
+        // Setup QR code scanner
+        qrScanLauncher = QrCodeUtil.setupScanner(this, this);
     }
 
     private void initializeViews() {
@@ -69,6 +83,7 @@ public class StudySessionActivity extends AppCompatActivity {
         time9Button = findViewById(R.id.time9Button);
         time12Button = findViewById(R.id.time12Button);
         createSessionButton = findViewById(R.id.createSessionButton);
+        joinSessionButton = findViewById(R.id.joinSessionButton);
 
         // Set up toolbar
         setSupportActionBar(toolbar);
@@ -84,6 +99,9 @@ public class StudySessionActivity extends AppCompatActivity {
 
         // Create session button listener
         createSessionButton.setOnClickListener(v -> createStudySession());
+
+        // Join session button listener
+        joinSessionButton.setOnClickListener(v -> startQrScanner());
     }
 
     private void updateDurationSelection(int durationSeconds, int points) {
@@ -107,6 +125,51 @@ public class StudySessionActivity extends AppCompatActivity {
         intent.putExtra("points", selectedPoints);
         startActivity(intent);
         finish();
+    }
+
+    private void startQrScanner() {
+        QrCodeUtil.startScanner(qrScanLauncher, "Scan session QR code to join");
+    }
+
+    @Override
+    public void onScanSuccess(String result) {
+        try {
+            Log.d("StudySessionActivity", "QR Scan Result: " + result);
+            JSONObject data = QrCodeUtil.parseQrCodeJson(result);
+
+            if (data != null && "session".equals(data.optString("type"))) {
+                String scannedSessionId = data.getString("sessionId");
+                String hostId = data.getString("hostId");
+                String hostUsername = data.getString("hostUsername");
+
+                Log.d("StudySessionActivity", "Parsed session ID: " + scannedSessionId + ", hostId: " + hostId);
+
+                // Launch JoinSessionActivity passing scanned info
+                Intent intent = new Intent(this, JoinSessionActivity.class);
+                intent.putExtra("sessionId", scannedSessionId);  // Make sure we're using the exact session ID from the QR code
+                intent.putExtra("hostId", hostId);
+                intent.putExtra("hostUsername", hostUsername);
+                startActivity(intent);
+            } else {
+                showToast("Invalid session QR code format");
+                Log.e("StudySessionActivity", "Invalid QR format: " + data);
+            }
+        } catch (JSONException e) {
+            showToast("Error reading QR code: " + e.getMessage());
+            Log.e("StudySessionActivity", "JSON parse error: " + e.getMessage(), e);
+        } catch (Exception e) {
+            showToast("Unexpected error processing QR code");
+            Log.e("StudySessionActivity", "Unexpected error: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void onScanCancelled() {
+        // User cancelled scan
+    }
+
+    private void showToast(String message) {
+        android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_SHORT).show();
     }
 
     private void setupBottomNavigation() {

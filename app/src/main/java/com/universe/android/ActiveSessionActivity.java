@@ -21,12 +21,14 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.universe.android.adapter.ParticipantAdapter;
 import com.universe.android.manager.UserManager;
 import com.universe.android.model.Participant;
+import com.universe.android.repository.SessionRepository;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -49,6 +51,7 @@ public class ActiveSessionActivity extends AppCompatActivity {
     private int points;
     private FirebaseFirestore db;
     private UserManager userManager;
+    private SessionRepository sessionRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +62,7 @@ public class ActiveSessionActivity extends AppCompatActivity {
         // Initialize Firestore and UserManager
         db = FirebaseFirestore.getInstance();
         userManager = UserManager.getInstance();
+        sessionRepository = SessionRepository.getInstance();
 
         // Initialize views
         timerText = findViewById(R.id.timerText);
@@ -90,7 +94,6 @@ public class ActiveSessionActivity extends AppCompatActivity {
         duration = intent.getIntExtra("duration", 3); // Default to 3 seconds for testing
         points = intent.getIntExtra("points", 20);   // Default to 20 points
 
-
         String durationText = (duration < 60) ?
                 duration + " seconds" : // For testing use seconds
                 (duration / 60) + " minutes"; // For production use minutes
@@ -106,15 +109,68 @@ public class ActiveSessionActivity extends AppCompatActivity {
             ArrayList<HashMap<String, String>> participantData =
                     (ArrayList<HashMap<String, String>>) intent.getSerializableExtra("participantData");
 
-            for (HashMap<String, String> data : participantData) {
-                Participant p = new Participant(data.get("name"), true);
-                p.setUserId(data.get("userId"));
-                p.setActualUsername(data.get("actualUsername"));
-                participants.add(p);
+            Log.d(TAG, "ParticipantData from intent: " + (participantData != null ? participantData.toString() : "null"));
+
+            if (participantData != null) {
+                for (HashMap<String, String> data : participantData) {
+                    Log.d(TAG, "Participant data entry: " + data.toString());
+
+                    String displayName = null;
+
+                    // Check various possible key names
+                    if (data.containsKey("name")) {
+                        displayName = data.get("name");
+                    } else if (data.containsKey("username")) {
+                        displayName = data.get("username");
+                    } else if (data.containsKey("actualUsername")) {
+                        displayName = data.get("actualUsername");
+                    }
+
+                    // If no name found, use a placeholder
+                    if (displayName == null || displayName.isEmpty()) {
+                        displayName = "Participant";
+                        Log.w(TAG, "No name found for participant: " + data);
+                    }
+
+                    Participant p = new Participant(displayName, true);
+                    p.setUserId(data.containsKey("userId") ? data.get("userId") : "");
+                    p.setActualUsername(data.containsKey("actualUsername") ?
+                            data.get("actualUsername") :
+                            data.containsKey("username") ? data.get("username") : displayName);
+
+                    participants.add(p);
+                    Log.d(TAG, "Added participant with name: " + displayName);
+                }
             }
         }
 
-        participantAdapter.setParticipants(participants);
+        // If participant data is missing or empty, fetch from Firestore directly
+        if (participants.isEmpty() && sessionId != null) {
+            Log.d("ActiveSessionActivity", "Participant list empty, fetching from Firestore");
+            sessionRepository.getSessionById(sessionId)
+                    .addOnSuccessListener(session -> {
+                        if (session != null && session.getParticipants() != null) {
+                            List<Participant> updatedParticipants = new ArrayList<>();
+                            for (Map<String, String> participantMap : session.getParticipants()) {
+                                // Determine if this is the host
+                                boolean isHost = participantMap.get("userId").equals(session.getHostId());
+                                String displayName = participantMap.get("username") +
+                                        (isHost ? " (Host)" : "");
+
+                                Participant participant = new Participant(displayName, true);
+                                participant.setUserId(participantMap.get("userId"));
+                                participant.setActualUsername(participantMap.get("username"));
+                                updatedParticipants.add(participant);
+                                Log.d("ActiveSessionActivity", "Added participant from Firestore: " +
+                                        participantMap.get("username") + (isHost ? " (Host)" : ""));
+                            }
+
+                            participantAdapter.setParticipants(updatedParticipants);
+                        }
+                    });
+        } else {
+            participantAdapter.setParticipants(participants);
+        }
     }
 
     private void startTimer(long durationMillis) {
@@ -235,28 +291,42 @@ public class ActiveSessionActivity extends AppCompatActivity {
 
         Log.d(TAG, "Participants (cleaned): " + cleanedParticipants.toString());
 
-        // First, award session points to all participants
-        userManager.awardSessionPoints(cleanedParticipants, points)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Successfully awarded points to all participants");
+        // Check if this device is the host by looking at the intent extra
+        boolean isHost = !getIntent().getBooleanExtra("isParticipant", true);
 
-                    // Then, update stats for current user only (EXCEPT points which were already awarded)
-                    userManager.updateStatsAfterSession(this, 0, durationMinutes)
-                            .addOnSuccessListener(statsVoid -> {
-                                Log.d(TAG, "Successfully updated user stats");
-                                finish();
-                            })
-                            .addOnFailureListener(e -> {
-                                Log.e(TAG, "Error updating user stats", e);
-                                // Still finish activity even if stats update fails
-                                finish();
-                            });
+        if (isHost) {
+            // Only host should award points to all participants
+            Log.d(TAG, "Host is awarding points to all participants");
+            userManager.awardSessionPoints(cleanedParticipants, points)
+                    .addOnSuccessListener(aVoid -> {
+                        Log.d(TAG, "Successfully awarded points to all participants");
+                        updateCurrentUserStats(durationMinutes);
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Error awarding points: " + e.getMessage());
+                        Toast.makeText(this,
+                                "Error awarding points. Please contact support.",
+                                Toast.LENGTH_LONG).show();
+                        finish();
+                    });
+        } else {
+            // Participants only update their own stats but don't award points
+            Log.d(TAG, "Participant is only updating own stats, not awarding points");
+            updateCurrentUserStats(durationMinutes);
+        }
+    }
+
+    // Separate method for updating current user stats
+    private void updateCurrentUserStats(int durationMinutes) {
+        // Update stats for current user only
+        userManager.updateStatsAfterSession(this, 0, durationMinutes)
+                .addOnSuccessListener(statsVoid -> {
+                    Log.d(TAG, "Successfully updated user stats");
+                    finish();
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error awarding points: " + e.getMessage());
-                    Toast.makeText(this,
-                            "Error awarding points. Please contact support.",
-                            Toast.LENGTH_LONG).show();
+                    Log.e(TAG, "Error updating user stats", e);
+                    // Still finish activity even if stats update fails
                     finish();
                 });
     }
