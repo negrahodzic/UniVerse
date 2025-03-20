@@ -1,15 +1,19 @@
 package com.universe.android;
 
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.nfc.NfcAdapter;
+import android.nfc.Tag;
 import android.os.Bundle;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -28,6 +32,7 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseUser;
 import com.universe.android.repository.UserRepository;
 import com.universe.android.util.NavigationHelper;
+import com.universe.android.util.NfcUtil;
 import com.universe.android.util.StatsHelper;
 
 import com.bumptech.glide.Glide;
@@ -63,6 +68,10 @@ public class ProfileActivity extends AppCompatActivity {
 
     private UserRepository userRepository;
 
+    private NfcAdapter nfcAdapter;
+    private PendingIntent pendingIntent;
+    private NfcUtil.NfcTagCallback nfcCallback;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -74,6 +83,9 @@ public class ProfileActivity extends AppCompatActivity {
 
         // Initialize views
         initializeViews();
+
+        nfcAdapter = NfcUtil.initializeNfcAdapter(this);
+        pendingIntent = NfcUtil.createNfcPendingIntent(this);
 
         // Load user data
         loadUserData();
@@ -269,20 +281,69 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void showRegisterNfcIdDialog() {
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
-        View dialogView = getLayoutInflater().inflate(R.layout.dialog_register_nfc_id, null);
-        TextInputEditText nfcIdInput = dialogView.findViewById(R.id.nfcIdInput);
+        // Create a custom dialog layout
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_register_nfc, null);
 
-        builder.setView(dialogView)
-                .setTitle("Register NFC ID")
-                .setPositiveButton("Save", (dialog, which) -> {
-                    String newNfcId = nfcIdInput.getText().toString();
-                    if (!newNfcId.isEmpty()) {
-                        updateNfcId(newNfcId);
-                    }
-                })
+        // Get references to views in the dialog layout
+        TextInputEditText nfcIdInput = dialogView.findViewById(R.id.nfcIdInput);
+        Button tapNfcButton = dialogView.findViewById(R.id.tapNfcButton);
+        TextView statusText = dialogView.findViewById(R.id.statusText);
+        ProgressBar progressBar = dialogView.findViewById(R.id.progressBar);
+
+        // Create the dialog
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle("Register NFC Card")
+                .setView(dialogView)
+                .setPositiveButton("Save", null) // Will be set up later
                 .setNegativeButton("Cancel", null)
-                .show();
+                .create();
+
+        // Check if NFC is available
+        if (nfcAdapter == null) {
+            tapNfcButton.setEnabled(false);
+            statusText.setText("NFC is not available on this device");
+        } else if (!nfcAdapter.isEnabled()) {
+            tapNfcButton.setEnabled(false);
+            statusText.setText("NFC is disabled. Please enable it in settings");
+        }
+
+        // Create an NFC tag callback to handle NFC scan results
+        nfcCallback = new NfcUtil.NfcTagCallback() {
+            @Override
+            public void onNfcTagDiscovered(Tag tag, String serialNumber) {
+                // Update UI with the scanned NFC ID
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    statusText.setText("NFC Card detected: " + serialNumber);
+                    nfcIdInput.setText(serialNumber);
+                });
+            }
+        };
+
+        // Set up tap button
+        tapNfcButton.setOnClickListener(v -> {
+            statusText.setText("Tap your NFC card to the back of the device...");
+            progressBar.setVisibility(View.VISIBLE);
+
+            // Enable NFC foreground dispatch to capture NFC events
+            NfcUtil.enableForegroundDispatch(this, nfcAdapter, pendingIntent);
+        });
+
+        // Show the dialog
+        dialog.show();
+
+        // Override the positive button to validate input before saving
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String nfcId = nfcIdInput.getText().toString().trim();
+            if (nfcId.isEmpty()) {
+                nfcIdInput.setError("Please enter an NFC ID or tap a card");
+                return;
+            }
+
+            // Save the NFC ID
+            updateNfcId(nfcId);
+            dialog.dismiss();
+        });
     }
 
     @Override
@@ -396,5 +457,22 @@ public class ProfileActivity extends AppCompatActivity {
         super.onResume();
         // Refresh user data when returning to profile screen
         loadUserData();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        // Process the NFC intent if there is a callback registered
+        if (nfcCallback != null) {
+            NfcUtil.processNfcIntent(intent, nfcCallback);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (nfcAdapter != null) {
+            NfcUtil.disableForegroundDispatch(nfcAdapter, this);
+        }
     }
 }
