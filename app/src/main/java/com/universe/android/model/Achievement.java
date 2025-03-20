@@ -2,8 +2,8 @@ package com.universe.android.model;
 
 import java.io.Serializable;
 
+
 public class Achievement implements Serializable {
-    // Achievement IDs
     public static final String ACHIEVEMENT_FIRST_SESSION = "first_session";
     public static final String ACHIEVEMENT_STUDY_STREAK_3 = "study_streak_3";
     public static final String ACHIEVEMENT_STUDY_STREAK_7 = "study_streak_7";
@@ -33,6 +33,8 @@ public class Achievement implements Serializable {
         this.isEarned = false;
         this.earnedTimestamp = 0;
     }
+
+    // Getters and setters
 
     public String getId() {
         return id;
@@ -85,5 +87,28 @@ public class Achievement implements Serializable {
 
     public void setEarnedTimestamp(long earnedTimestamp) {
         this.earnedTimestamp = earnedTimestamp;
+    }
+
+    public String getProgressDescription(int currentValue, int targetValue) {
+        return description + "\n" +
+                "Progress: " + currentValue + "/" + targetValue;
+    }
+
+    public int getCompletionPercentage(int currentValue, int targetValue) {
+        if (targetValue <= 0) return 0;
+        return Math.min(100, (currentValue * 100) / targetValue);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Achievement that = (Achievement) obj;
+        return id != null && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
     }
 }

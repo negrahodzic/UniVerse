@@ -26,7 +26,8 @@ import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseUser;
-import com.universe.android.manager.UserManager;
+import com.universe.android.repository.UserRepository;
+import com.universe.android.util.NavigationHelper;
 import com.universe.android.util.StatsHelper;
 
 import com.bumptech.glide.Glide;
@@ -60,11 +61,16 @@ public class ProfileActivity extends AppCompatActivity {
     private MaterialButton registerNfcIdButton;
     private MaterialButton viewAchievementsButton;
 
+    private UserRepository userRepository;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_profile);
+
+        // Initialize repository
+        userRepository = UserRepository.getInstance();
 
         // Initialize views
         initializeViews();
@@ -72,8 +78,12 @@ public class ProfileActivity extends AppCompatActivity {
         // Load user data
         loadUserData();
 
-        // Setup bottom navigation
-        setupBottomNavigation();
+        // Setup bottom navigation using helper
+        NavigationHelper.setupBottomNavigation(
+                this,
+                findViewById(R.id.bottomNav),
+                R.id.navigation_profile
+        );
     }
 
     private void initializeViews() {
@@ -126,7 +136,7 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void loadUserData() {
         // Initialize user stats
-        UserManager.getInstance().initializeUserStats()
+        userRepository.initializeUserStats()
                 .addOnSuccessListener(aVoid -> {
                     Log.d("ProfileActivity", "User stats initialized");
                     // Now load user data
@@ -140,7 +150,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void loadUserDetails() {
-        UserManager.getInstance().getCurrentUserData().addOnSuccessListener(user -> {
+        userRepository.getCurrentUserData().addOnSuccessListener(user -> {
             if (user != null) {
                 // Set basic info
                 usernameText.setText(user.getUsername());
@@ -149,7 +159,7 @@ public class ProfileActivity extends AppCompatActivity {
                 // Set standard stats
                 totalPointsText.setText(String.valueOf(user.getPoints()));
                 currentLevelText.setText(String.valueOf(user.calculateLevel()));
-                globalRankText.setText("#-"); // Placeholder for rank (to be implemented in leaderboard activity)
+                globalRankText.setText("#-"); // Placeholder for rank
 
                 // Study stats
                 long totalHours = user.getTotalStudyTime() / 60; // Convert minutes to hours
@@ -163,7 +173,7 @@ public class ProfileActivity extends AppCompatActivity {
 
                 // Event stats
                 eventsAttendedText.setText(String.valueOf(user.getEventsAttended()));
-                pointsSpentText.setText("0"); // Placeholder - could be calculated from tickets
+                pointsSpentText.setText("0"); // Placeholder
 
                 // Set new enhanced stats if available in the layout
                 if (streakDaysText != null) {
@@ -197,7 +207,12 @@ public class ProfileActivity extends AppCompatActivity {
                     byte[] decodedString = Base64.decode(user.getProfileImageBase64(), Base64.DEFAULT);
                     Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
 
-                    Glide.with(this).load(decodedByte).circleCrop().placeholder(R.drawable.ic_launcher_foreground).error(R.drawable.ic_launcher_foreground).into(profileImage);
+                    Glide.with(this)
+                            .load(decodedByte)
+                            .circleCrop()
+                            .placeholder(R.drawable.ic_launcher_foreground)
+                            .error(R.drawable.ic_launcher_foreground)
+                            .into(profileImage);
                 }
             }
         }).addOnFailureListener(e -> {
@@ -205,33 +220,8 @@ public class ProfileActivity extends AppCompatActivity {
         });
     }
 
-    private void setupBottomNavigation() {
-        BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
-        bottomNav.setSelectedItemId(R.id.navigation_profile);
-
-        bottomNav.setOnItemSelectedListener(item -> {
-            int itemId = item.getItemId();
-            if (itemId == R.id.navigation_dashboard) {
-                startActivity(new Intent(this, DashboardActivity.class));
-                return true;
-            } else if (itemId == R.id.navigation_study) {
-                startActivity(new Intent(this, StudySessionActivity.class));
-                return true;
-            } else if (itemId == R.id.navigation_events) {
-                startActivity(new Intent(this, EventsActivity.class));
-                return true;
-            } else if (itemId == R.id.navigation_leaderboard) {
-                startActivity(new Intent(this, LeaderboardActivity.class));
-                return true;
-            } else if (itemId == R.id.navigation_profile) {
-                return true;
-            }
-            return false;
-        });
-    }
-
     private void logout() {
-        UserManager.getInstance().signOut();
+        userRepository.signOut();
         Intent intent = new Intent(this, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
@@ -254,13 +244,11 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     /**
-     * Show achievements screen (to be implemented)
+     * Show achievements screen
      */
     private void showAchievementsScreen() {
-        Toast.makeText(this, "Achievements feature coming soon!", Toast.LENGTH_SHORT).show();
-        // This would typically launch an achievements activity
-        // Intent intent = new Intent(this, AchievementsActivity.class);
-        // startActivity(intent);
+        Intent intent = new Intent(this, AchievementsActivity.class);
+        startActivity(intent);
     }
 
     private void showUsernameDialog() {
@@ -268,12 +256,16 @@ public class ProfileActivity extends AppCompatActivity {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_username, null);
         TextInputEditText usernameInput = dialogView.findViewById(R.id.usernameInput);
 
-        builder.setView(dialogView).setTitle("Edit Username").setPositiveButton("Save", (dialog, which) -> {
-            String newUsername = usernameInput.getText().toString();
-            if (!newUsername.isEmpty()) {
-                updateUsername(newUsername);
-            }
-        }).setNegativeButton("Cancel", null).show();
+        builder.setView(dialogView)
+                .setTitle("Edit Username")
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String newUsername = usernameInput.getText().toString();
+                    if (!newUsername.isEmpty()) {
+                        updateUsername(newUsername);
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void showRegisterNfcIdDialog() {
@@ -281,16 +273,16 @@ public class ProfileActivity extends AppCompatActivity {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_register_nfc_id, null);
         TextInputEditText nfcIdInput = dialogView.findViewById(R.id.nfcIdInput);
 
-        builder.setView(dialogView).setTitle("Register NFC id").setPositiveButton("Save", (dialog, which) -> {
-            String newNfcId = nfcIdInput.getText().toString();
-            if (!newNfcId.isEmpty()) {
-                updateNfcId(newNfcId);
-            }
-        }).setNegativeButton("Cancel", null).show();
-    }
-
-    private void showOrganisationDialog() {
-        Log.e("TODO", "TODO showOrganisationDialog");
+        builder.setView(dialogView)
+                .setTitle("Register NFC ID")
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String newNfcId = nfcIdInput.getText().toString();
+                    if (!newNfcId.isEmpty()) {
+                        updateNfcId(newNfcId);
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     @Override
@@ -304,7 +296,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void uploadProfileImage(Uri imageUri) {
-        UserManager.getInstance().uploadProfileImage(imageUri, this).addOnSuccessListener(aVoid -> {
+        userRepository.uploadProfileImage(imageUri, this).addOnSuccessListener(aVoid -> {
             // Reload the user data to get the new Base64 image
             loadUserData();
             Toast.makeText(this, "Profile image updated successfully", Toast.LENGTH_SHORT).show();
@@ -315,7 +307,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void updateUsername(String newUsername) {
-        UserManager.getInstance().updateUsername(newUsername).addOnSuccessListener(aVoid -> {
+        userRepository.updateUsername(newUsername).addOnSuccessListener(aVoid -> {
             usernameText.setText(newUsername);
             Toast.makeText(this, "Username updated successfully", Toast.LENGTH_SHORT).show();
         }).addOnFailureListener(e -> {
@@ -325,12 +317,11 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void updateNfcId(String newNfcId) {
-        UserManager.getInstance().updateNfcId(newNfcId).addOnSuccessListener(aVoid -> {
-//            usernameText.setText(newUsername);
-            Toast.makeText(this, "NFC id updated successfully", Toast.LENGTH_SHORT).show();
+        userRepository.updateNfcId(newNfcId).addOnSuccessListener(aVoid -> {
+            Toast.makeText(this, "NFC ID updated successfully", Toast.LENGTH_SHORT).show();
         }).addOnFailureListener(e -> {
-            Toast.makeText(this, "Failed to update NFC id", Toast.LENGTH_SHORT).show();
-            Log.e("ProfileActivity", "Error updating NFC id", e);
+            Toast.makeText(this, "Failed to update NFC ID", Toast.LENGTH_SHORT).show();
+            Log.e("ProfileActivity", "Error updating NFC ID", e);
         });
     }
 
@@ -341,10 +332,11 @@ public class ProfileActivity extends AppCompatActivity {
         TextInputEditText newPassword = dialogView.findViewById(R.id.newPassword);
         TextInputEditText confirmPassword = dialogView.findViewById(R.id.confirmPassword);
 
-        builder.setView(dialogView).setTitle("Change Password").setPositiveButton("Save", null) // Set to null initially
-                .setNegativeButton("Cancel", null).create();
-
-        AlertDialog dialog = builder.create();
+        AlertDialog dialog = builder.setView(dialogView)
+                .setTitle("Change Password")
+                .setPositiveButton("Save", null) // Set to null initially
+                .setNegativeButton("Cancel", null)
+                .create();
 
         dialog.setOnShowListener(dialogInterface -> {
             Button button = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
@@ -390,7 +382,7 @@ public class ProfileActivity extends AppCompatActivity {
     private void updatePassword(String newPassword) {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user != null) {
-            user.updatePassword(newPassword).addOnSuccessListener(aVoid -> {
+            userRepository.updatePassword(newPassword, user.getEmail()).addOnSuccessListener(aVoid -> {
                 Toast.makeText(this, "Password updated successfully", Toast.LENGTH_SHORT).show();
             }).addOnFailureListener(e -> {
                 Toast.makeText(this, "Failed to update password", Toast.LENGTH_SHORT).show();

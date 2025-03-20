@@ -1,9 +1,9 @@
-package com.universe.android.service;
+package com.universe.android.repository;
 
 import android.content.Context;
 import android.util.Log;
-import android.widget.Toast;
 
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -11,9 +11,12 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.Query;
+import com.universe.android.R;
 import com.universe.android.model.Event;
 import com.universe.android.model.Ticket;
 
@@ -30,42 +33,41 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
-public class EventService {
-    private static final String TAG = "EventService";
-
-    // Mac IP address where Docker is running
-    private static final String DOCKER_IP = "172.21.143.172";
-
+public class EventRepository extends FirebaseRepository {
+    private static final String TAG = "EventRepository";
+    private static final String DOCKER_IP = "172.22.140.90";
     private static final String API_PORT = "8080";
-
     private static final String API_BASE_URL = "http://" + DOCKER_IP + ":" + API_PORT + "/api";
 
+    private static EventRepository instance;
     private final RequestQueue requestQueue;
     private final Context context;
 
-    public EventService(Context context) {
-        this.context = context;
-        this.requestQueue = Volley.newRequestQueue(context);
+    private EventRepository(Context context) {
+        super();
+        this.context = context.getApplicationContext();
+        this.requestQueue = Volley.newRequestQueue(this.context);
+    }
+
+    public static synchronized EventRepository getInstance(Context context) {
+        if (instance == null) {
+            instance = new EventRepository(context);
+        }
+        return instance;
     }
 
     public interface EventCallback {
         void onSuccess(List<Event> events);
-
         void onError(String error);
     }
 
     public interface BookingCallback {
         void onSuccess(Ticket ticket);
-
         void onError(String error);
     }
 
-    /**
-     * Get all upcoming events from the API
-     */
     public void getUpcomingEvents(final EventCallback callback) {
         String url = API_BASE_URL + "/events";
-        Log.d(TAG, "Fetching events from: " + url);
 
         JsonArrayRequest request = new JsonArrayRequest(
                 Request.Method.GET,
@@ -75,7 +77,6 @@ public class EventService {
                     @Override
                     public void onResponse(JSONArray response) {
                         try {
-                            Log.d(TAG, "Received events response: " + response.toString().substring(0, Math.min(200, response.toString().length())) + "...");
                             List<Event> events = parseEventList(response);
                             callback.onSuccess(events);
                         } catch (JSONException e) {
@@ -87,33 +88,68 @@ public class EventService {
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Log.e(TAG, "Error fetching events: " + (error.getMessage() != null ? error.getMessage() : "Unknown error"), error);
+                        Log.e(TAG, "Error fetching events: " +
+                                (error.getMessage() != null ? error.getMessage() : "Unknown error"), error);
+                        callback.onError("Error connecting to event service");
                     }
                 }
         );
 
-        // Add longer timeout for development
-        request.setRetryPolicy(new com.android.volley.DefaultRetryPolicy(
-                15000,  // 15 seconds timeout
-                1,       // 1 retry
-                com.android.volley.DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        request.setRetryPolicy(new DefaultRetryPolicy(
+                15000,
+                1,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
         ));
 
         requestQueue.add(request);
     }
 
-    /**
-     * Book tickets for an event
-     */
+    public void getEventById(String eventId, final EventCallback callback) {
+        String url = API_BASE_URL + "/events/" + eventId;
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.GET,
+                url,
+                null,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        try {
+                            Event event = parseEvent(response);
+                            List<Event> events = new ArrayList<>();
+                            events.add(event);
+                            callback.onSuccess(events);
+                        } catch (JSONException e) {
+                            Log.e(TAG, "Error parsing event: " + e.getMessage(), e);
+                            callback.onError("Error parsing event details");
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Log.e(TAG, "Error fetching event: " +
+                                (error.getMessage() != null ? error.getMessage() : "Unknown error"), error);
+                        callback.onError("Error fetching event details");
+                    }
+                }
+        );
+
+        requestQueue.add(request);
+    }
+
     public void bookEvent(String eventId, int numberOfTickets, final BookingCallback callback) {
+        if (!isLoggedIn()) {
+            callback.onError("User not logged in");
+            return;
+        }
+
         String url = API_BASE_URL + "/events/" + eventId + "/book";
-        Log.d(TAG, "Booking event: " + url);
 
         try {
             JSONObject requestBody = new JSONObject();
             requestBody.put("numberOfTickets", numberOfTickets);
 
-            // Add API key header
             Map<String, String> headers = new HashMap<>();
             headers.put("X-API-KEY", "org_5102a8751b8e4258b1c0f36f5570e516");
 
@@ -123,9 +159,6 @@ public class EventService {
                     requestBody,
                     response -> {
                         try {
-                            Log.d(TAG, "Booking response: " + response.toString());
-
-                            // Parse response
                             String bookingId = response.has("bookingId")
                                     ? response.getString("bookingId")
                                     : "BOOKING-" + UUID.randomUUID().toString().substring(0, 8);
@@ -134,14 +167,12 @@ public class EventService {
                                     ? response.getString("verificationCode")
                                     : String.format("%06d", (int) (Math.random() * 1000000));
 
-                            // Get event details
                             getEventById(eventId, new EventCallback() {
                                 @Override
                                 public void onSuccess(List<Event> events) {
                                     if (events.size() > 0) {
                                         Event event = events.get(0);
 
-                                        // Create ticket object
                                         SimpleDateFormat sdf = new SimpleDateFormat("MMMM d, yyyy", Locale.US);
                                         String purchaseDate = sdf.format(new Date());
 
@@ -153,11 +184,9 @@ public class EventService {
                                                 false
                                         );
 
-                                        // Set ticket quantity and price
                                         ticket.setNumberOfTickets(numberOfTickets);
                                         ticket.setPointsPrice(event.getPointsPrice());
 
-                                        // Save ticket to user's Firestore collection
                                         saveTicketToFirestore(ticket, numberOfTickets, event.getPointsPrice(), () -> {
                                             callback.onSuccess(ticket);
                                         });
@@ -188,11 +217,10 @@ public class EventService {
                 }
             };
 
-            // Add longer timeout for development
-            request.setRetryPolicy(new com.android.volley.DefaultRetryPolicy(
-                    15000,  // 15 seconds timeout
-                    1,       // 1 retry
-                    com.android.volley.DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+            request.setRetryPolicy(new DefaultRetryPolicy(
+                    15000,
+                    1,
+                    DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
             ));
 
             requestQueue.add(request);
@@ -203,17 +231,12 @@ public class EventService {
         }
     }
 
-    /**
-     * Save ticket to user's Firestore collection
-     */
     private void saveTicketToFirestore(Ticket ticket, int numberOfTickets, int pointsPrice, Runnable onComplete) {
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser == null) {
+        if (!isLoggedIn()) {
             Log.e(TAG, "No user logged in, cannot save ticket");
             return;
         }
 
-        // Create ticket data for Firestore
         Map<String, Object> ticketData = new HashMap<>();
         ticketData.put("eventId", ticket.getEvent().getId());
         ticketData.put("purchaseDate", ticket.getPurchaseDate());
@@ -231,10 +254,8 @@ public class EventService {
         ticketData.put("eventLocation", ticket.getEvent().getLocation());
         ticketData.put("eventAddress", ticket.getEvent().getAddress());
 
-        // Save to Firestore
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.collection("users")
-                .document(currentUser.getUid())
+                .document(getCurrentUserId())
                 .collection("tickets")
                 .document(ticket.getId())
                 .set(ticketData)
@@ -249,46 +270,82 @@ public class EventService {
                 });
     }
 
-    /**
-     * Get details for a specific event
-     */
-    public void getEventById(String eventId, final EventCallback callback) {
-        String url = API_BASE_URL + "/events/" + eventId;
-        Log.d(TAG, "Fetching event details: " + url);
+    public Task<List<Ticket>> getUserTickets() {
+        if (!isLoggedIn()) {
+            return Tasks.forException(new IllegalStateException("User not logged in"));
+        }
 
-        JsonObjectRequest request = new JsonObjectRequest(
-                Request.Method.GET,
-                url,
-                null,
-                new Response.Listener<JSONObject>() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        try {
-                            Event event = parseEvent(response);
-                            List<Event> events = new ArrayList<>();
-                            events.add(event);
-                            callback.onSuccess(events);
-                        } catch (JSONException e) {
-                            Log.e(TAG, "Error parsing event: " + e.getMessage(), e);
-                            callback.onError("Error parsing event details");
+        return db.collection("users")
+                .document(getCurrentUserId())
+                .collection("tickets")
+                .orderBy("purchaseTimestamp", Query.Direction.DESCENDING)
+                .get()
+                .continueWith(task -> {
+                    List<Ticket> tickets = new ArrayList<>();
+
+                    if (task.isSuccessful() && !task.getResult().isEmpty()) {
+                        for (DocumentSnapshot document : task.getResult()) {
+                            String ticketId = document.getId();
+                            String eventId = document.getString("eventId");
+                            String purchaseDate = document.getString("purchaseDate");
+                            String verificationCode = document.getString("verificationCode");
+                            boolean isUsed = document.getBoolean("used") != null ?
+                                    document.getBoolean("used") : false;
+
+                            // Get stored event details
+                            String eventTitle = document.getString("eventTitle");
+                            String eventDate = document.getString("eventDate");
+                            String eventTime = document.getString("eventTime");
+                            String eventLocation = document.getString("eventLocation");
+                            String eventAddress = document.getString("eventAddress");
+
+                            // Create a basic event with the stored details
+                            Event basicEvent = new Event(
+                                    eventId,
+                                    eventTitle != null ? eventTitle : "Unknown Event",
+                                    "Loading event details...",
+                                    eventDate != null ? eventDate : "Unknown date",
+                                    eventTime != null ? eventTime : "",
+                                    eventLocation != null ? eventLocation : "Unknown location",
+                                    eventAddress != null ? eventAddress : "Unknown address",
+                                    0,
+                                    R.drawable.ic_launcher_foreground
+                            );
+
+                            // Create ticket with basic event details
+                            Ticket ticket = new Ticket(
+                                    ticketId, basicEvent, purchaseDate, verificationCode, isUsed);
+
+                            // Add additional ticket details if available
+                            if (document.getLong("numberOfTickets") != null) {
+                                ticket.setNumberOfTickets(document.getLong("numberOfTickets").intValue());
+                            }
+
+                            if (document.getLong("pointsPrice") != null) {
+                                ticket.setPointsPrice(document.getLong("pointsPrice").intValue());
+                            }
+
+                            tickets.add(ticket);
                         }
                     }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Log.e(TAG, "Error fetching event: " + (error.getMessage() != null ? error.getMessage() : "Unknown error"), error);
-                        callback.onError("Error fetching event details");
-                    }
-                }
-        );
 
-        requestQueue.add(request);
+                    return tickets;
+                });
     }
 
-    /**
-     * Parse a list of events from JSON response
-     */
+    public Task<Void> markTicketAsUsed(String ticketId) {
+        if (!isLoggedIn()) {
+            return Tasks.forException(new IllegalStateException("User not logged in"));
+        }
+
+        DocumentReference ticketRef = db.collection("users")
+                .document(getCurrentUserId())
+                .collection("tickets")
+                .document(ticketId);
+
+        return ticketRef.update("used", true);
+    }
+
     private List<Event> parseEventList(JSONArray jsonArray) throws JSONException {
         List<Event> events = new ArrayList<>();
 
@@ -300,21 +357,14 @@ public class EventService {
         return events;
     }
 
-    /**
-     * Parse a single event from JSON
-     */
     private Event parseEvent(JSONObject eventJson) throws JSONException {
-        Log.d(TAG, "Parsing event: " + eventJson.toString().substring(0, Math.min(200, eventJson.toString().length())) + "...");
-
         String id = eventJson.getString("eventId");
         String title = eventJson.getString("eventName");
 
-        // Get description if available
         String description = eventJson.has("description") ?
                 eventJson.getString("description") :
                 "No description available";
 
-        // Parse date and time
         String dateTimeStr = eventJson.getString("eventDateTime");
         SimpleDateFormat apiFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
         SimpleDateFormat displayDateFormat = new SimpleDateFormat("MMMM d, yyyy", Locale.US);
@@ -328,15 +378,13 @@ public class EventService {
             time = displayTimeFormat.format(dateObj);
         } catch (Exception e) {
             Log.e(TAG, "Error parsing date: " + e.getMessage(), e);
-            date = dateTimeStr; // Use raw value as fallback
+            date = dateTimeStr;
         }
 
-        // Parse location information
         JSONObject venueJson = eventJson.has("venue") ? eventJson.getJSONObject("venue") : null;
         String location = venueJson != null ? venueJson.getString("name") : "TBD";
         String address = venueJson != null ? venueJson.getString("address") : "Address unavailable";
 
-        // Get coordinates if available
         double latitude = venueJson != null && venueJson.has("latitude") ?
                 venueJson.getDouble("latitude") : 0.0;
         double longitude = venueJson != null && venueJson.has("longitude") ?
@@ -344,23 +392,21 @@ public class EventService {
 
         int pointsPrice = eventJson.has("ticketPrice") ?
                 (int) eventJson.getDouble("ticketPrice") :
-                500; // Default points price
+                500;
 
         int availableTickets = eventJson.has("availableTickets") ?
                 eventJson.getInt("availableTickets") :
-                10; // Default available tickets
+                10;
 
         Event event = new Event(
                 id, title, description, date, time, location, address,
                 latitude, longitude, pointsPrice, availableTickets
         );
 
-        // Add organizer if available
         if (eventJson.has("organizer")) {
             event.setOrganizer(eventJson.getString("organizer"));
         }
 
         return event;
     }
-
 }

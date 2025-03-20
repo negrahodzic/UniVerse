@@ -1,7 +1,5 @@
 package com.universe.android;
 
-import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,10 +12,8 @@ import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.universe.android.adapter.LeaderboardPagerAdapter;
+import com.universe.android.util.NavigationHelper;
 
-/**
- * Activity for displaying leaderboards
- */
 public class LeaderboardActivity extends AppCompatActivity {
 
     private ViewPager2 viewPager;
@@ -63,13 +59,14 @@ public class LeaderboardActivity extends AppCompatActivity {
         // Set up filter toggle group
         setupFilterButtons();
 
-        // Set up bottom navigation
-        setupBottomNavigation();
+        // Set up bottom navigation using helper
+        NavigationHelper.setupBottomNavigation(
+                this,
+                findViewById(R.id.bottomNav),
+                R.id.navigation_leaderboard
+        );
     }
 
-    /**
-     * Set up filter toggle buttons
-     */
     private void setupFilterButtons() {
         // Set initial selection
         btnFilterPoints.setChecked(true);
@@ -91,46 +88,9 @@ public class LeaderboardActivity extends AppCompatActivity {
         });
     }
 
-    /**
-     * Set up bottom navigation
-     */
-    private void setupBottomNavigation() {
-        BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
-        bottomNav.setSelectedItemId(R.id.navigation_leaderboard);
-
-        bottomNav.setOnItemSelectedListener(item -> {
-            int itemId = item.getItemId();
-            Intent intent = null;
-
-            if (itemId == R.id.navigation_dashboard) {
-                intent = new Intent(this, DashboardActivity.class);
-            } else if (itemId == R.id.navigation_study) {
-                intent = new Intent(this, StudySessionActivity.class);
-            } else if (itemId == R.id.navigation_events) {
-                intent = new Intent(this, EventsActivity.class);
-            } else if (itemId == R.id.navigation_leaderboard) {
-                return true; // Already on leaderboard screen
-            } else if (itemId == R.id.navigation_profile) {
-                intent = new Intent(this, ProfileActivity.class);
-            }
-
-            if (intent != null) {
-                startActivity(intent);
-                return true;
-            }
-
-            return false;
-        });
-    }
-
     @Override
     public boolean onSupportNavigateUp() {
         onBackPressed();
         return true;
-    }
-
-    public static void start(Context context) {
-        Intent intent = new Intent(context, LeaderboardActivity.class);
-        context.startActivity(intent);
     }
 }

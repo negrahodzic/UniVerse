@@ -19,9 +19,6 @@ import com.universe.android.model.LeaderboardEntry;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Adapter for displaying leaderboard entries in a RecyclerView
- */
 public class LeaderboardAdapter extends RecyclerView.Adapter<LeaderboardAdapter.ViewHolder> {
 
     private List<LeaderboardEntry> entries = new ArrayList<>();
@@ -30,6 +27,7 @@ public class LeaderboardAdapter extends RecyclerView.Adapter<LeaderboardAdapter.
 
     public interface OnLeaderboardEntryClickListener {
         void onEntryClick(LeaderboardEntry entry);
+        void onEntryLongClick(LeaderboardEntry entry);
     }
 
     public LeaderboardAdapter(OnLeaderboardEntryClickListener listener) {
@@ -65,10 +63,6 @@ public class LeaderboardAdapter extends RecyclerView.Adapter<LeaderboardAdapter.
         notifyDataSetChanged();
     }
 
-    /**
-     * Find position of current user in the list
-     * @return Position of current user or -1 if not found
-     */
     public int getCurrentUserPosition() {
         for (int i = 0; i < entries.size(); i++) {
             if (entries.get(i).isCurrentUser()) {
@@ -93,16 +87,26 @@ public class LeaderboardAdapter extends RecyclerView.Adapter<LeaderboardAdapter.
             userLevel = itemView.findViewById(R.id.userLevel);
             pointsValue = itemView.findViewById(R.id.pointsValue);
 
+            // Normal click listener
             itemView.setOnClickListener(v -> {
                 int position = getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION && listener != null) {
                     listener.onEntryClick(entries.get(position));
                 }
             });
+
+            // Long click listener for friend removal
+            itemView.setOnLongClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && listener != null) {
+                    listener.onEntryLongClick(entries.get(position));
+                    return true;
+                }
+                return false;
+            });
         }
 
         void bind(LeaderboardEntry entry) {
-            // Set rank number
             rankNumber.setText(String.valueOf(entry.getRank()));
 
             // Set username and highlight if it's the current user
@@ -162,6 +166,9 @@ public class LeaderboardAdapter extends RecyclerView.Adapter<LeaderboardAdapter.
                         rankNumber.setTextColor(Color.WHITE);
                         break;
                 }
+            } else {
+                rankNumber.setBackgroundResource(R.drawable.circle_background);
+                rankNumber.setTextColor(Color.BLACK);
             }
         }
     }

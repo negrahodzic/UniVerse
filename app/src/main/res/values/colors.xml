@@ -2,4 +2,7 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="achievement_earned_bg">#E8F5E9</color>
+    <color name="achievement_earned_stroke">#4CAF50</color>
+    <color name="achievement_locked_bg">#F5F5F5</color>
 </resources>

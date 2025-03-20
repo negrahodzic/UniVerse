@@ -16,21 +16,18 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.universe.android.R;
 import com.universe.android.adapter.LeaderboardAdapter;
 import com.universe.android.model.LeaderboardEntry;
 import com.universe.android.model.User;
+import com.universe.android.repository.UserRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class GlobalLeaderboardFragment extends Fragment implements LeaderboardAdapter.OnLeaderboardEntryClickListener {
     private static final String TAG = "GlobalLeaderboard";
-    private static final int LEADERBOARD_LIMIT = 100; // Maximum number of users to show
+    private static final int LEADERBOARD_LIMIT = 100;
 
     private RecyclerView leaderboardRecyclerView;
     private ProgressBar progressBar;
@@ -41,13 +38,10 @@ public class GlobalLeaderboardFragment extends Fragment implements LeaderboardAd
     private MaterialButton scrollToUserButton;
 
     private LeaderboardAdapter adapter;
-    private FirebaseFirestore db;
-    private FirebaseAuth auth;
-    private String currentUserId;
-    private String displayMode = "points"; // Default display mode (points, hours, streak)
+    private UserRepository userRepository;
+    private String displayMode = "points";
 
     public GlobalLeaderboardFragment() {
-        // Required empty public constructor
     }
 
     public static GlobalLeaderboardFragment newInstance(String displayMode) {
@@ -65,12 +59,7 @@ public class GlobalLeaderboardFragment extends Fragment implements LeaderboardAd
             displayMode = getArguments().getString("displayMode", "points");
         }
 
-        // Initialize Firebase
-        db = FirebaseFirestore.getInstance();
-        auth = FirebaseAuth.getInstance();
-        if (auth.getCurrentUser() != null) {
-            currentUserId = auth.getCurrentUser().getUid();
-        }
+        userRepository = UserRepository.getInstance();
     }
 
     @Override
@@ -83,7 +72,6 @@ public class GlobalLeaderboardFragment extends Fragment implements LeaderboardAd
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Initialize views
         leaderboardRecyclerView = view.findViewById(R.id.leaderboardRecyclerView);
         progressBar = view.findViewById(R.id.progressBar);
         emptyStateText = view.findViewById(R.id.emptyStateText);
@@ -92,28 +80,32 @@ public class GlobalLeaderboardFragment extends Fragment implements LeaderboardAd
         userScoreText = view.findViewById(R.id.userScoreText);
         scrollToUserButton = view.findViewById(R.id.scrollToUserButton);
 
-        // Set up RecyclerView
         adapter = new LeaderboardAdapter(this);
         leaderboardRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         leaderboardRecyclerView.setAdapter(adapter);
 
-        // Set display mode
         adapter.setDisplayMode(displayMode);
 
-        // Hide user rank card initially
         userRankCard.setVisibility(View.GONE);
 
-        // Set up scroll to user button
+        // Add padding to the bottom of the recycler view to avoid overlap with user rank card
+        leaderboardRecyclerView.setPadding(0, 0, 0,
+                getResources().getDimensionPixelSize(R.dimen.user_rank_card_height));
+        leaderboardRecyclerView.setClipToPadding(false);
+
         scrollToUserButton.setOnClickListener(v -> scrollToCurrentUser());
 
-        // Load leaderboard data
         loadLeaderboardData();
     }
 
     @Override
     public void onEntryClick(LeaderboardEntry entry) {
-        // Handle click on leaderboard entry
         // Could show user profile or achievement details
+    }
+
+    @Override
+    public void onEntryLongClick(LeaderboardEntry entry) {
+        // Not used in global leaderboard
     }
 
     public void updateDisplayMode(String mode) {
@@ -121,20 +113,17 @@ public class GlobalLeaderboardFragment extends Fragment implements LeaderboardAd
         if (adapter != null) {
             adapter.setDisplayMode(mode);
         }
-        // Reload data with new sort
         loadLeaderboardData();
     }
 
     private void loadLeaderboardData() {
         if (getActivity() == null) return;
 
-        // Show loading state
         progressBar.setVisibility(View.VISIBLE);
         leaderboardRecyclerView.setVisibility(View.GONE);
         emptyStateText.setVisibility(View.GONE);
         userRankCard.setVisibility(View.GONE);
 
-        // Determine which field to sort by based on display mode
         String sortField;
         switch (displayMode) {
             case "hours":
@@ -149,24 +138,19 @@ public class GlobalLeaderboardFragment extends Fragment implements LeaderboardAd
                 break;
         }
 
-        // Query Firestore for users, sorted by selected field
-        db.collection("users")
-                .orderBy(sortField, Query.Direction.DESCENDING)
-                .limit(LEADERBOARD_LIMIT)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
+        userRepository.getGlobalLeaderboard(sortField, LEADERBOARD_LIMIT)
+                .addOnSuccessListener(users -> {
+                    if (getActivity() == null) return;
+
                     List<LeaderboardEntry> entries = new ArrayList<>();
                     int userRank = -1;
                     LeaderboardEntry currentUserEntry = null;
 
-                    // Process results
                     int rank = 1;
-                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        User user = document.toObject(User.class);
+                    for (User user : users) {
                         LeaderboardEntry entry = new LeaderboardEntry(user, rank);
 
-                        // Check if this is the current user
-                        if (user.getUid().equals(currentUserId)) {
+                        if (userRepository.getCurrentUserId().equals(user.getUid())) {
                             userRank = rank;
                             entry.setCurrentUser(true);
                             currentUserEntry = entry;
@@ -176,7 +160,6 @@ public class GlobalLeaderboardFragment extends Fragment implements LeaderboardAd
                         rank++;
                     }
 
-                    // Update UI
                     updateLeaderboardUI(entries, userRank, currentUserEntry);
                 })
                 .addOnFailureListener(e -> {
@@ -195,7 +178,6 @@ public class GlobalLeaderboardFragment extends Fragment implements LeaderboardAd
             return;
         }
 
-        // Update adapter
         adapter.setEntries(entries);
         leaderboardRecyclerView.setVisibility(View.VISIBLE);
 
@@ -203,7 +185,6 @@ public class GlobalLeaderboardFragment extends Fragment implements LeaderboardAd
             userRankCard.setVisibility(View.VISIBLE);
             userRankText.setText("Your rank: #" + userRank);
 
-            // Set score text based on display mode
             switch (displayMode) {
                 case "hours":
                     userScoreText.setText(currentUserEntry.getFormattedStudyTime() + " hours");

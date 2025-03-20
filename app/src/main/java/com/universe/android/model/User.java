@@ -18,8 +18,6 @@ public class User {
     private String nfcId;
     private String profileImageBase64;
     private boolean emailVerified;
-
-    // New fields for enhanced stats
     private int streakDays;            // Current consecutive study days
     private int maxStreakDays;         // Longest streak achieved
     private int eventsAttended;        // Total events attended
@@ -36,6 +34,11 @@ public class User {
     private int sessionsCompleted;     // Total sessions count
 
     private int completedSessions;
+
+    private int friendCount;
+    private int achievementCount;
+    private String formattedStudyTime;
+
 
     // Required for Firestore
     public User() {
@@ -309,5 +312,17 @@ public class User {
 
     public void setCompletedSessions(int completedSessions) {
         this.completedSessions = completedSessions;
+    }
+
+    public void setFriendCount(int friendCount) {
+        this.friendCount = friendCount;
+    }
+
+    public void setAchievementCount(int achievementCount) {
+        this.achievementCount = achievementCount;
+    }
+
+    public void setFormattedStudyTime(String formattedStudyTime) {
+        this.formattedStudyTime = formattedStudyTime;
     }
 }

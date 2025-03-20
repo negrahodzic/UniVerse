@@ -60,7 +60,7 @@ public class NetworkUtil {
         }
 
         // Create a request to check API availability - use events endpoint instead of health
-        String url = "http://172.22.140.90:8080/api/events";
+        String url = "http://172.21.143.172/api/events";
 
         com.android.volley.RequestQueue queue = com.android.volley.toolbox.Volley.newRequestQueue(context);
         com.android.volley.Request<String> request = new com.android.volley.toolbox.StringRequest(
