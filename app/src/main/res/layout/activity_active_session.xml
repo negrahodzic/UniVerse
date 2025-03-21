@@ -8,13 +8,16 @@
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
+        style="@style/Widget.UniVerse.Toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="?attr/colorPrimary"
-        android:elevation="4dp"
-        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
+        android:elevation="0dp"
+        android:fitsSystemWindows="true"
+        android:theme="@style/ThemeOverlay.Material3.Dark.ActionBar"
         app:layout_constraintTop_toTopOf="parent"
-        app:title="Study Session" />
+        app:title="Study Session"
+        app:titleTextColor="?attr/colorOnPrimary" />
 
     <!-- Timer Card -->
     <com.google.android.material.card.MaterialCardView
@@ -22,6 +25,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
+        app:cardElevation="1dp"
+        app:cardCornerRadius="12dp"
+        style="?attr/materialCardViewElevatedStyle"
         app:layout_constraintTop_toBottomOf="@id/toolbar">
 
         <LinearLayout
@@ -38,6 +44,7 @@
                 android:textSize="48sp"
                 android:textStyle="bold"
                 android:gravity="center"
+                android:textColor="?attr/colorOnSurface"
                 android:fontFamily="monospace"/>
 
             <TextView
@@ -46,6 +53,7 @@
                 android:layout_height="wrap_content"
                 android:text="Session in progress"
                 android:gravity="center"
+                android:textAppearance="?attr/textAppearanceBodyLarge"
                 android:layout_marginTop="8dp"/>
 
         </LinearLayout>
@@ -57,6 +65,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
+        app:cardElevation="1dp"
+        app:cardCornerRadius="12dp"
+        style="?attr/materialCardViewOutlinedStyle"
         app:layout_constraintTop_toBottomOf="@id/timerCard">
 
         <LinearLayout
@@ -69,13 +80,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Session Settings"
-                android:textAppearance="?attr/textAppearanceHeadline6"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
                 android:layout_marginBottom="8dp"/>
 
             <TextView
                 android:id="@+id/settingsText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
                 android:text="Loading settings..."/>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -86,6 +98,9 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_margin="16dp"
+        app:cardElevation="1dp"
+        app:cardCornerRadius="12dp"
+        style="?attr/materialCardViewOutlinedStyle"
         app:layout_constraintTop_toBottomOf="@id/settingsCard"
         app:layout_constraintBottom_toTopOf="@id/bottomButtons">
 
@@ -99,13 +114,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Participants"
-                android:textAppearance="?attr/textAppearanceHeadline6"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
                 android:layout_marginBottom="8dp"/>
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/participantsList"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content"
+                android:clipToPadding="false"/>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
@@ -124,7 +140,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginEnd="8dp"
-            android:text="Take Break"/>
+            android:text="Take Break"
+            style="@style/Widget.Material3.Button"/>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/endButton"
@@ -133,7 +150,7 @@
             android:layout_weight="1"
             android:layout_marginStart="8dp"
             android:text="End Session"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+            style="@style/Widget.Material3.Button.OutlinedButton"/>
 
     </LinearLayout>
 

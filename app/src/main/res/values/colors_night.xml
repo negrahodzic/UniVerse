@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Default app colors - Dark mode -->
+    <color name="app_primary_dark">#a8ccd3</color>
+    <color name="app_primary_container_dark">#607d82</color>
+    <color name="app_secondary_dark">#a4b1b5</color>
+    <color name="app_tertiary_dark">#8e7b7f</color>
+    <color name="app_background_dark">#121212</color>
+    <color name="app_surface_dark">#1e1e1e</color>
+    <color name="app_on_surface_dark">#e0e0e0</color>
+
+    <!-- NTU Theme colors - Dark mode -->
+    <color name="ntu_primary_dark">#FF4081</color>
+    <color name="ntu_surface_dark">#121212</color>
+    <color name="ntu_on_surface_dark">#e0e0e0</color>
+
+    <!-- Existing colors -->
+    <color name="achievement_earned_bg_dark">#143c19</color>
+    <color name="achievement_earned_stroke_dark">#4CAF50</color>
+    <color name="achievement_locked_bg_dark">#2d2d2d</color>
+</resources>

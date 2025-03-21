@@ -13,7 +13,8 @@
         android:layout_marginHorizontal="16dp"
         app:cardCornerRadius="12dp"
         app:cardElevation="2dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="16dp"
+        style="?attr/materialCardViewElevatedStyle"
         app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
@@ -35,7 +36,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="0"
-                    android:textColor="@color/design_default_color_primary"
+                    android:textColor="?attr/colorPrimary"
                     android:textSize="24sp"
                     android:textStyle="bold" />
 
@@ -43,7 +44,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Sessions"
-                    android:textSize="14sp" />
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
             </LinearLayout>
 
             <!-- Total time -->
@@ -59,7 +60,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="0"
-                    android:textColor="@color/design_default_color_primary"
+                    android:textColor="?attr/colorPrimary"
                     android:textSize="24sp"
                     android:textStyle="bold" />
 
@@ -67,7 +68,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Hours"
-                    android:textSize="14sp" />
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
             </LinearLayout>
 
             <!-- Total points -->
@@ -83,7 +84,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="0"
-                    android:textColor="@color/design_default_color_primary"
+                    android:textColor="?attr/colorPrimary"
                     android:textSize="24sp"
                     android:textStyle="bold" />
 
@@ -91,7 +92,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Points"
-                    android:textSize="14sp" />
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
             </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -122,22 +123,22 @@
             android:layout_width="100dp"
             android:layout_height="100dp"
             android:src="@drawable/ic_launcher_foreground"
-            android:alpha="0.5"/>
+            android:alpha="0.5"
+            app:tint="?attr/colorPrimary"/>
 
         <TextView
             android:id="@+id/emptyStateText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="No study sessions yet"
-            android:textSize="18sp"
-            android:textStyle="bold"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
             android:layout_marginTop="16dp"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Start a session to begin tracking your study time"
-            android:textSize="14sp"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
             android:layout_marginTop="8dp"/>
 
         <com.google.android.material.button.MaterialButton
@@ -145,6 +146,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Start a Session"
+            style="@style/Widget.Material3.Button"
             android:layout_marginTop="16dp"/>
     </LinearLayout>
 

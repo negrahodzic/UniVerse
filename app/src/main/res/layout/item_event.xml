@@ -5,8 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    style="?attr/materialCardViewElevatedStyle">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -16,8 +17,9 @@
         <ImageView
             android:id="@+id/eventImage"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:scaleType="centerCrop"/>
+            android:layout_height="100dp"
+            android:scaleType="centerCrop"
+            android:contentDescription="Event image"/>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -29,35 +31,38 @@
                 android:id="@+id/eventTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAppearance="?attr/textAppearanceHeadline6"/>
+                android:textAppearance="?attr/textAppearanceTitleLarge"/>
 
             <TextView
                 android:id="@+id/eventDate"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:textAppearance="?attr/textAppearanceBody2"/>
+                android:textAppearance="?attr/textAppearanceBodyMedium"/>
 
             <TextView
                 android:id="@+id/eventLocation"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:textAppearance="?attr/textAppearanceBody2"/>
+                android:textAppearance="?attr/textAppearanceBodyMedium"/>
 
             <TextView
                 android:id="@+id/eventPrice"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:textStyle="bold"/>
+                android:textStyle="bold"
+                android:textAppearance="?attr/textAppearanceBodyLarge"
+                android:textColor="?attr/colorPrimary"/>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/bookButton"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Book Now"/>
+                android:text="Book Now"
+                style="@style/Widget.Material3.Button"/>
 
         </LinearLayout>
     </LinearLayout>

@@ -9,12 +9,19 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.universe.android.util.ThemeManager;
 
 public class SplashActivity extends AppCompatActivity {
     private FirebaseAuth auth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply theme before setting content view
+        String orgId = ThemeManager.getCurrentOrg(this);
+        if (!orgId.isEmpty()) {
+            ThemeManager.applyOrganisationTheme(this, orgId);
+        }
+
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_splash);

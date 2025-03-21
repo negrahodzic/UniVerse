@@ -15,6 +15,7 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.universe.android.repository.UserRepository;
 import com.universe.android.util.NfcUtil;
+import com.universe.android.util.ThemeManager;
 
 public class FriendNfcActivity extends AppCompatActivity implements NfcUtil.NfcTagCallback {
 
@@ -28,6 +29,12 @@ public class FriendNfcActivity extends AppCompatActivity implements NfcUtil.NfcT
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply organisation theme
+        String orgId = ThemeManager.getCurrentOrg(this);
+        if (!orgId.isEmpty()) {
+            ThemeManager.applyOrganisationTheme(this, orgId);
+        }
+
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_friend_nfc);

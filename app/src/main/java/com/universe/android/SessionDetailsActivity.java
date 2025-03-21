@@ -18,6 +18,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.universe.android.adapter.ParticipantAdapter;
 import com.universe.android.model.Participant;
 import com.universe.android.model.StudySession;
+import com.universe.android.util.ThemeManager;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -46,6 +47,12 @@ public class SessionDetailsActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply organisation theme
+        String orgId = ThemeManager.getCurrentOrg(this);
+        if (!orgId.isEmpty()) {
+            ThemeManager.applyOrganisationTheme(this, orgId);
+        }
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_session_details);
 
@@ -68,6 +75,7 @@ public class SessionDetailsActivity extends AppCompatActivity {
     }
 
     private void initializeViews() {
+
         // Find views
         toolbar = findViewById(R.id.toolbar);
         sessionDateText = findViewById(R.id.sessionDateText);
@@ -84,6 +92,12 @@ public class SessionDetailsActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setTitle("Session Details");
+        }
+
+        // Add organisation logo to toolbar
+        String orgId = ThemeManager.getCurrentOrg(this);
+        if (!orgId.isEmpty()) {
+            ThemeManager.addLogoToToolbar(this, toolbar, orgId);
         }
 
         // Set up recycler view

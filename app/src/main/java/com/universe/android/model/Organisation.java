@@ -19,13 +19,6 @@ public class Organisation {
     public Organisation() {
     }
 
-    public Organisation(String id, String name, List<String> domains, int logoResource) {
-        this.id = id;
-        this.name = name;
-        this.domains = domains;
-        this.logoResource = logoResource;
-    }
-
     // Getters and setters
     public String getId() {
         return id;

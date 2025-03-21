@@ -58,22 +58,6 @@ public class UserRepository extends FirebaseRepository {
                 });
     }
 
-    public void clearCache() {
-        cachedCurrentUser = null;
-    }
-
-    public Task<User> getUserById(String userId) {
-        return db.collection("users")
-                .document(userId)
-                .get()
-                .continueWith(task -> {
-                    if (task.isSuccessful() && task.getResult() != null) {
-                        return task.getResult().toObject(User.class);
-                    }
-                    return null;
-                });
-    }
-
     public Task<User> getUserByNfcId(String nfcId) {
         return db.collection("users")
                 .whereEqualTo("nfcId", nfcId)
@@ -85,22 +69,6 @@ public class UserRepository extends FirebaseRepository {
                     }
                     return null;
                 });
-    }
-
-    public Task<Void> updatePoints(int points) {
-        if (!isLoggedIn()) return null;
-
-        return db.collection("users")
-                .document(getCurrentUserId())
-                .update("points", points);
-    }
-
-    public Task<Void> updateStudyTime(long totalMinutes) {
-        if (!isLoggedIn()) return null;
-
-        return db.collection("users")
-                .document(getCurrentUserId())
-                .update("totalStudyTime", totalMinutes);
     }
 
     public Task<Void> uploadProfileImage(Uri imageUri, Context context) {
@@ -304,95 +272,6 @@ public class UserRepository extends FirebaseRepository {
         });
     }
 
-    public Task<Void> updateStatsAfterSession(int pointsEarned, int sessionDurationMinutes) {
-        if (!isLoggedIn()) return null;
-
-        return getCurrentUserData().continueWithTask(task -> {
-            if (!task.isSuccessful() || task.getResult() == null) {
-                return Tasks.forException(new IllegalStateException("Failed to get user data"));
-            }
-
-            User user = task.getResult();
-            DocumentReference userRef = db.collection("users").document(user.getUid());
-
-            int newPoints = user.getPoints() + pointsEarned;
-            long newStudyTime = user.getTotalStudyTime() + sessionDurationMinutes;
-            int newSessionsCompleted = user.getSessionsCompleted() + 1;
-
-            updateStreak(user);
-            int newConsistencyScore = calculateConsistencyScore(user);
-            String weekId = getCurrentWeekId();
-
-            Map<String, Object> updates = new HashMap<>();
-            updates.put("points", newPoints);
-            updates.put("totalStudyTime", newStudyTime);
-            updates.put("sessionsCompleted", newSessionsCompleted);
-            updates.put("lastStudyDate", System.currentTimeMillis());
-            updates.put("streakDays", user.getStreakDays());
-            updates.put("maxStreakDays", user.getMaxStreakDays());
-            updates.put("consistencyScore", newConsistencyScore);
-
-            if (pointsEarned > 0) {
-                int newCompletedSessions = user.getCompletedSessions() + 1;
-                updates.put("completedSessions", newCompletedSessions);
-                updates.put("weeklyStats." + weekId, FieldValue.increment(pointsEarned));
-            }
-
-            return userRef.update(updates);
-        });
-    }
-
-    public Task<Void> awardSessionPoints(List<String> usernames, int pointsPerUser) {
-        return db.runTransaction(transaction -> {
-            for (String username : usernames) {
-                String cleanUsername = username.trim();
-                if (cleanUsername.isEmpty()) continue;
-
-                Query userQuery = db.collection("users")
-                        .whereEqualTo("username", cleanUsername)
-                        .limit(1);
-                try {
-                    QuerySnapshot querySnapshot = Tasks.await(userQuery.get());
-
-                    if (!querySnapshot.isEmpty()) {
-                        DocumentSnapshot userDoc = querySnapshot.getDocuments().get(0);
-                        String userId = userDoc.getId();
-                        DocumentReference userRef = userDoc.getReference();
-
-                        int currentPoints = userDoc.getLong("points") != null
-                                ? userDoc.getLong("points").intValue() : 0;
-                        int newPoints = currentPoints + pointsPerUser;
-
-                        transaction.update(userRef, "points", newPoints);
-                        transaction.update(userRef, "weeklyStats." + getCurrentWeekId(),
-                                FieldValue.increment(pointsPerUser));
-                    }
-                } catch (ExecutionException | InterruptedException e) {
-                    Log.e(TAG, "Error in transaction", e);
-                    throw new RuntimeException(e);
-                }
-            }
-            return null;
-        });
-    }
-
-    public Task<Void> updateEventAttendance() {
-        if (!isLoggedIn()) return null;
-
-        return getCurrentUserData().continueWithTask(task -> {
-            if (!task.isSuccessful() || task.getResult() == null) {
-                return Tasks.forException(new IllegalStateException("Failed to get user data"));
-            }
-
-            User user = task.getResult();
-            int newEventsAttended = user.getEventsAttended() + 1;
-
-            return db.collection("users")
-                    .document(user.getUid())
-                    .update("eventsAttended", newEventsAttended);
-        });
-    }
-
     public Task<Void> initializeUserStats() {
         if (!isLoggedIn()) return null;
 
@@ -473,90 +352,5 @@ public class UserRepository extends FirebaseRepository {
             width = (int) (height * bitmapRatio);
         }
         return Bitmap.createScaledBitmap(image, width, height, true);
-    }
-
-    private boolean updateStreak(User user) {
-        if (user == null) return false;
-
-        long lastStudyDate = user.getLastStudyDate();
-        long currentTime = System.currentTimeMillis();
-
-        if (lastStudyDate == 0) {
-            user.setStreakDays(1);
-            return true;
-        }
-
-        long dayDifference = calculateDayDifference(lastStudyDate, currentTime);
-
-        if (dayDifference == 1) {
-            user.setStreakDays(user.getStreakDays() + 1);
-            return true;
-        } else if (dayDifference == 0) {
-            return false;
-        } else {
-            user.setStreakDays(1);
-            return false;
-        }
-    }
-
-    private long calculateDayDifference(long timestamp1, long timestamp2) {
-        Calendar cal1 = Calendar.getInstance();
-        Calendar cal2 = Calendar.getInstance();
-        cal1.setTimeInMillis(timestamp1);
-        cal2.setTimeInMillis(timestamp2);
-
-        cal1.set(Calendar.HOUR_OF_DAY, 0);
-        cal1.set(Calendar.MINUTE, 0);
-        cal1.set(Calendar.SECOND, 0);
-        cal1.set(Calendar.MILLISECOND, 0);
-
-        cal2.set(Calendar.HOUR_OF_DAY, 0);
-        cal2.set(Calendar.MINUTE, 0);
-        cal2.set(Calendar.SECOND, 0);
-        cal2.set(Calendar.MILLISECOND, 0);
-
-        long diffMillis = cal2.getTimeInMillis() - cal1.getTimeInMillis();
-        return diffMillis / (24 * 60 * 60 * 1000);
-    }
-
-    private int calculateConsistencyScore(User user) {
-        if (user == null || user.getWeeklyStats() == null) return 0;
-
-        int studyDaysInPast2Weeks = countStudyDaysInPast2Weeks(user);
-        return Math.min(100, (studyDaysInPast2Weeks * 100) / 14);
-    }
-
-    private int countStudyDaysInPast2Weeks(User user) {
-        if (user == null || user.getWeeklyStats() == null) return 0;
-
-        String currentWeekId = getCurrentWeekId();
-        String previousWeekId = getPreviousWeekId();
-        Map<String, Integer> weeklyStats = user.getWeeklyStats();
-        int daysCount = 0;
-
-        if (weeklyStats.containsKey(currentWeekId)) {
-            daysCount += Math.min(7, weeklyStats.get(currentWeekId));
-        }
-
-        if (weeklyStats.containsKey(previousWeekId)) {
-            daysCount += Math.min(7, weeklyStats.get(previousWeekId));
-        }
-
-        return daysCount;
-    }
-
-    private String getCurrentWeekId() {
-        Calendar calendar = Calendar.getInstance();
-        int week = calendar.get(Calendar.WEEK_OF_YEAR);
-        int year = calendar.get(Calendar.YEAR);
-        return year + "-" + String.format(Locale.US, "%02d", week);
-    }
-
-    private String getPreviousWeekId() {
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.WEEK_OF_YEAR, -1);
-        int week = calendar.get(Calendar.WEEK_OF_YEAR);
-        int year = calendar.get(Calendar.YEAR);
-        return year + "-" + String.format(Locale.US, "%02d", week);
     }
 }

@@ -36,13 +36,13 @@ import com.universe.android.util.NfcUtil;
 import com.universe.android.util.StatsHelper;
 
 import com.bumptech.glide.Glide;
+import com.universe.android.util.ThemeManager;
 
 public class ProfileActivity extends AppCompatActivity {
     private TextView usernameText;
     private TextView organisationText;
     private TextView totalPointsText;
     private TextView currentLevelText;
-    private TextView globalRankText;
     private TextView totalSessionsText;
     private TextView totalHoursText;
     private TextView avgSessionLengthText;
@@ -74,6 +74,12 @@ public class ProfileActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply organisation theme
+        String orgId = ThemeManager.getCurrentOrg(this);
+        if (!orgId.isEmpty()) {
+            ThemeManager.applyOrganisationTheme(this, orgId);
+        }
+
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_profile);
@@ -107,7 +113,6 @@ public class ProfileActivity extends AppCompatActivity {
         // Stats fields
         totalPointsText = findViewById(R.id.totalPointsText);
         currentLevelText = findViewById(R.id.currentLevelText);
-        globalRankText = findViewById(R.id.globalRankText);
         totalSessionsText = findViewById(R.id.totalSessionsText);
         totalHoursText = findViewById(R.id.totalHoursText);
         avgSessionLengthText = findViewById(R.id.avgSessionLengthText);
@@ -171,7 +176,6 @@ public class ProfileActivity extends AppCompatActivity {
                 // Set standard stats
                 totalPointsText.setText(String.valueOf(user.getPoints()));
                 currentLevelText.setText(String.valueOf(user.calculateLevel()));
-                globalRankText.setText("#-"); // Placeholder for rank
 
                 // Study stats
                 long totalHours = user.getTotalStudyTime() / 60; // Convert minutes to hours

@@ -2,28 +2,34 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbar"
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayout"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="wrap_content"
         android:background="?attr/colorPrimary"
-        android:elevation="4dp"
-        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
+        android:elevation="0dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:navigationIcon="@drawable/ic_back"
-        app:title="Session QR Code" />
+        app:tabGravity="fill"
+        app:tabMode="fixed"
+        app:tabTextColor="?attr/colorOnPrimary" />
 
     <TextView
         android:id="@+id/instructionsText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
+        android:layout_marginTop="40dp"
         android:text="Show this QR code to other students to let them join your study session"
         android:textAlignment="center"
-        app:layout_constraintTop_toBottomOf="@id/toolbar" />
+        android:textAppearance="?attr/textAppearanceBodyLarge"
+        app:layout_constraintTop_toBottomOf="@+id/tabLayout"
+        tools:layout_editor_absoluteX="16dp" />
 
     <ImageView
         android:id="@+id/qrCodeImageView"
@@ -40,7 +46,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:textAlignment="center"
-        android:textAppearance="?attr/textAppearanceHeadline6"
+        android:textAppearance="?attr/textAppearanceTitleLarge"
         android:text="Session #12345"
         app:layout_constraintTop_toBottomOf="@id/qrCodeImageView" />
 
@@ -50,6 +56,7 @@
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
         android:text="Close"
+        style="@style/Widget.Material3.Button"
         app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

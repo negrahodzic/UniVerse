@@ -10,19 +10,21 @@
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
+        style="@style/Widget.UniVerse.Toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="?attr/colorPrimary"
-        android:elevation="4dp"
-        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
+        android:elevation="0dp"
+        android:fitsSystemWindows="true"
+        android:theme="@style/ThemeOverlay.Material3.Dark.ActionBar"
         app:layout_constraintTop_toTopOf="parent"
-        app:title="Select Your University" />
+        app:title="Select Your University"
+        app:titleTextColor="?attr/colorOnPrimary" />
 
     <ProgressBar
         android:id="@+id/loadingSpinner"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
         android:visibility="gone"
         app:layout_constraintTop_toTopOf="@id/organisationList"
         app:layout_constraintBottom_toBottomOf="parent"

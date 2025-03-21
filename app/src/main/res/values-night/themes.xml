@@ -1,7 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.UniVerse" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <!-- Default dark theme colors -->
+        <item name="colorPrimary">@color/app_primary_dark</item>
+        <item name="colorPrimaryContainer">@color/app_primary_container_dark</item>
+        <item name="colorSecondary">@color/app_secondary_dark</item>
+        <item name="colorTertiary">@color/app_tertiary_dark</item>
+        <item name="android:colorBackground">@color/app_background_dark</item>
+        <item name="colorSurface">@color/app_surface_dark</item>
+        <item name="colorOnSurface">@color/app_on_surface_dark</item>
+    </style>
+
+    <!-- NTU Theme -->
+    <style name="Theme.UniVerse.NTU" parent="Base.Theme.UniVerse">
+        <item name="colorPrimary">@color/ntu_primary_dark</item>
+        <item name="colorSecondary">@color/ntu_primary_dark</item>
+        <item name="colorTertiary">@color/ntu_primary_dark</item>
+        <item name="colorSurface">@color/ntu_surface_dark</item>
+        <item name="colorOnSurface">@color/ntu_on_surface_dark</item>
     </style>
 </resources>

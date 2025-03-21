@@ -21,15 +21,6 @@ public class LeaderboardEntry {
     public LeaderboardEntry() {
     }
 
-    public LeaderboardEntry(String userId, String username, int rank, int points) {
-        this.userId = userId;
-        this.username = username;
-        this.rank = rank;
-        this.points = points;
-        this.level = calculateLevel(points);
-        this.isCurrentUser = false;
-    }
-
     // Constructor from User object
     public LeaderboardEntry(User user, int rank) {
         this.userId = user.getUid();
@@ -126,33 +117,13 @@ public class LeaderboardEntry {
     }
 
     // Helper methods
-
-    /**
-     * Calculate user's level based on points
-     *
-     * @param points User's points
-     * @return The calculated level (starting from 1)
-     */
     private int calculateLevel(int points) {
         return StatsHelper.calculateLevel(points);
     }
 
-    /**
-     * Get formatted study time in hours
-     *
-     * @return Formatted study time
-     */
     public String getFormattedStudyTime() {
         double hours = studyTime / 60.0;
         return String.format("%.1f", hours);
     }
 
-    /**
-     * Get formatted rank (with # symbol)
-     *
-     * @return Formatted rank
-     */
-    public String getFormattedRank() {
-        return "#" + rank;
-    }
 }

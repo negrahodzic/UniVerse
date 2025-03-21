@@ -14,6 +14,7 @@ import com.google.android.material.button.MaterialButton;
 import com.journeyapps.barcodescanner.ScanOptions;
 import com.universe.android.repository.UserRepository;
 import com.universe.android.util.QrCodeUtil;
+import com.universe.android.util.ThemeManager;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -32,6 +33,14 @@ public class FriendQrActivity extends AppCompatActivity implements QrCodeUtil.Qr
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        // Apply organisation theme
+        String orgId = ThemeManager.getCurrentOrg(this);
+        if (!orgId.isEmpty()) {
+            ThemeManager.applyOrganisationTheme(this, orgId);
+        }
+
+
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_friend_qr);

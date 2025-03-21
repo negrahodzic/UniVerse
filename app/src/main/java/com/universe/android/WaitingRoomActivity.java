@@ -22,6 +22,8 @@ import com.universe.android.model.StudySession;
 import com.universe.android.repository.SessionRepository;
 import com.universe.android.repository.UserRepository;
 import com.universe.android.util.NfcUtil;
+import com.universe.android.util.ThemeManager;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -54,6 +56,12 @@ public class WaitingRoomActivity extends AppCompatActivity implements NfcUtil.Nf
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply organisation theme
+        String orgId = ThemeManager.getCurrentOrg(this);
+        if (!orgId.isEmpty()) {
+            ThemeManager.applyOrganisationTheme(this, orgId);
+        }
+
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_waiting_room);
@@ -103,6 +111,7 @@ public class WaitingRoomActivity extends AppCompatActivity implements NfcUtil.Nf
         showQrCodeButton = findViewById(R.id.showQrCodeButton);
 
         setSupportActionBar(toolbar);
+
         toolbar.setNavigationOnClickListener(v -> finish());
     }
 

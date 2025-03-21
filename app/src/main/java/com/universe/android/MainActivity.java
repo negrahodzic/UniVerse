@@ -12,9 +12,13 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.appbar.MaterialToolbar;
 import com.universe.android.adapter.OrganisationAdapter;
 import com.universe.android.manager.OrganisationManager;
 import com.universe.android.model.Organisation;
+import com.universe.android.util.ThemeManager;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,7 +26,6 @@ public class MainActivity extends AppCompatActivity implements OrganisationAdapt
 
     private RecyclerView recyclerView;
     private OrganisationAdapter adapter;
-
     private ProgressBar loadingSpinner;
 
     @Override
@@ -31,6 +34,9 @@ public class MainActivity extends AppCompatActivity implements OrganisationAdapt
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
+        MaterialToolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
         recyclerView = findViewById(R.id.organisationList);
         recyclerView.setLayoutManager(new GridLayoutManager(this, 2)); // 2 columns
         adapter = new OrganisationAdapter(this);
@@ -38,41 +44,36 @@ public class MainActivity extends AppCompatActivity implements OrganisationAdapt
 
         loadingSpinner = findViewById(R.id.loadingSpinner);
 
-        // Load sample data
-        // loadSampleOrganisations();
+        // Load organisations
         loadOrganisations();
     }
 
-    private void loadSampleOrganisations() {
-        List<Organisation> organisations = new ArrayList<>();
-        organisations.add(new Organisation("1", "Nottingham Trent University", R.drawable.ic_launcher_foreground));
-        organisations.add(new Organisation("3", "Oxford University", R.drawable.ic_launcher_foreground));
-        organisations.add(new Organisation("2", "Cambridge University", R.drawable.ic_launcher_foreground));
-        organisations.add(new Organisation("4", "UCL", R.drawable.ic_launcher_foreground));
-        adapter.setOrganisations(organisations);
-    }
-
-
     @Override
     public void onOrganisationClick(Organisation organisation) {
+        // Save the selected organisation ID for theme application
         getSharedPreferences("universe", MODE_PRIVATE)
                 .edit()
                 .putString("selected_org_id", organisation.getId())
                 .apply();
 
+        // Apply organisation theme
+        ThemeManager.applyOrganisationTheme(this, organisation.getId());
+
+        // Navigate to email verification
         Intent intent = new Intent(this, EmailVerificationActivity.class);
         intent.putExtra(EmailVerificationActivity.EXTRA_ORGANISATION_NAME, organisation.getName());
         intent.putExtra(EmailVerificationActivity.EXTRA_ORGANISATION_ID, organisation.getId());
         startActivity(intent);
     }
 
-
     private void loadOrganisations() {
         Log.d("MainActivity", "Loading organisations...");
+        loadingSpinner.setVisibility(View.VISIBLE);
 
         OrganisationManager.getInstance()
                 .getAllOrganisations()
                 .addOnSuccessListener(querySnapshot -> {
+                    loadingSpinner.setVisibility(View.GONE);
                     ArrayList<Organisation> organisations = new ArrayList<>();
                     querySnapshot.forEach(doc -> {
                         Organisation org = doc.toObject(Organisation.class);
@@ -83,6 +84,7 @@ public class MainActivity extends AppCompatActivity implements OrganisationAdapt
                     adapter.setOrganisations(organisations);
                 })
                 .addOnFailureListener(e -> {
+                    loadingSpinner.setVisibility(View.GONE);
                     Log.e("MainActivity", "Error loading organisations: " + e.getMessage());
                     Toast.makeText(this, "Error loading organizations: " + e.getMessage(),
                             Toast.LENGTH_LONG).show();

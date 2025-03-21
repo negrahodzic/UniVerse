@@ -35,7 +35,7 @@ import java.util.UUID;
 
 public class EventRepository extends FirebaseRepository {
     private static final String TAG = "EventRepository";
-    private static final String DOCKER_IP = "172.22.140.90";
+    private static final String DOCKER_IP = "172.21.141.161";
     private static final String API_PORT = "8080";
     private static final String API_BASE_URL = "http://" + DOCKER_IP + ":" + API_PORT + "/api";
 

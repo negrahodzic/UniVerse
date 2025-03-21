@@ -191,57 +191,6 @@ public class AchievementRepository extends FirebaseRepository {
         }
     }
 
-    public void checkAllAchievements(Context context, User user) {
-        if (user == null) return;
-
-        checkSessionAchievements(context, user, 0);
-        checkStreakAchievements(context, user);
-        checkSocialAchievements(context, user);
-        checkEventAchievements(context, user);
-        checkPointAchievements(context, user);
-        checkConsistencyAchievements(context, user);
-    }
-
-    public void checkSessionAchievements(Context context, User user, int sessionDurationMinutes) {
-        if (user == null) return;
-
-        // First session achievement
-        if (!user.hasAchievement(Achievement.ACHIEVEMENT_FIRST_SESSION) && user.getCompletedSessions() > 0) {
-            awardAchievement(context, user, Achievement.ACHIEVEMENT_FIRST_SESSION);
-        }
-
-        // Study marathon achievement (3+ hours)
-        if (!user.hasAchievement(Achievement.ACHIEVEMENT_STUDY_MARATHON) && sessionDurationMinutes >= 180) {
-            awardAchievement(context, user, Achievement.ACHIEVEMENT_STUDY_MARATHON);
-        }
-
-        // Community leader achievement (10+ sessions hosted)
-        if (!user.hasAchievement(Achievement.ACHIEVEMENT_COMMUNITY_LEADER) && user.getSessionsCompleted() >= 10) {
-            awardAchievement(context, user, Achievement.ACHIEVEMENT_COMMUNITY_LEADER);
-        }
-    }
-
-    public void checkStreakAchievements(Context context, User user) {
-        if (user == null) return;
-
-        int streak = user.getStreakDays();
-
-        // 3-day streak
-        if (!user.hasAchievement(Achievement.ACHIEVEMENT_STUDY_STREAK_3) && streak >= 3) {
-            awardAchievement(context, user, Achievement.ACHIEVEMENT_STUDY_STREAK_3);
-        }
-
-        // 7-day streak
-        if (!user.hasAchievement(Achievement.ACHIEVEMENT_STUDY_STREAK_7) && streak >= 7) {
-            awardAchievement(context, user, Achievement.ACHIEVEMENT_STUDY_STREAK_7);
-        }
-
-        // 14-day streak
-        if (!user.hasAchievement(Achievement.ACHIEVEMENT_STUDY_STREAK_14) && streak >= 14) {
-            awardAchievement(context, user, Achievement.ACHIEVEMENT_STUDY_STREAK_14);
-        }
-    }
-
     public void checkSocialAchievements(Context context, User user) {
         if (user == null || user.getFriends() == null) return;
 
@@ -251,30 +200,4 @@ public class AchievementRepository extends FirebaseRepository {
         }
     }
 
-    public void checkEventAchievements(Context context, User user) {
-        if (user == null) return;
-
-        // Event enthusiast achievement (5+ events)
-        if (!user.hasAchievement(Achievement.ACHIEVEMENT_EVENT_ENTHUSIAST) && user.getEventsAttended() >= 5) {
-            awardAchievement(context, user, Achievement.ACHIEVEMENT_EVENT_ENTHUSIAST);
-        }
-    }
-
-    public void checkPointAchievements(Context context, User user) {
-        if (user == null) return;
-
-        // Point collector achievement (5000+ points)
-        if (!user.hasAchievement(Achievement.ACHIEVEMENT_POINT_COLLECTOR) && user.getPoints() >= 5000) {
-            awardAchievement(context, user, Achievement.ACHIEVEMENT_POINT_COLLECTOR);
-        }
-    }
-
-    public void checkConsistencyAchievements(Context context, User user) {
-        if (user == null) return;
-
-        // Consistency king achievement (90+ score)
-        if (!user.hasAchievement(Achievement.ACHIEVEMENT_CONSISTENCY_KING) && user.getConsistencyScore() >= 90) {
-            awardAchievement(context, user, Achievement.ACHIEVEMENT_CONSISTENCY_KING);
-        }
-    }
 }

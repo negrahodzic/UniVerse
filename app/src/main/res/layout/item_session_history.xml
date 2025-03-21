@@ -6,8 +6,8 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="16dp"
     android:layout_marginVertical="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp">
+    app:cardCornerRadius="16dp"
+    style="?attr/materialCardViewOutlinedStyle">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -25,7 +25,7 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@android:drawable/ic_menu_today"
-                app:tint="@color/design_default_color_primary"
+                app:tint="?attr/colorPrimary"
                 android:contentDescription="Date" />
 
             <TextView
@@ -35,25 +35,22 @@
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
                 android:text="March 18, 2025 • 10:30 AM"
-                android:textSize="16sp"
-                android:textStyle="bold"/>
+                android:textAppearance="?attr/textAppearanceTitleMedium"/>
 
             <TextView
                 android:id="@+id/sessionPoints"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="+100 points"
-                android:textColor="#4CAF50"
-                android:textSize="16sp"
-                android:textStyle="bold"/>
+                android:textColor="?attr/colorPrimary"
+                android:textAppearance="?attr/textAppearanceTitleMedium"/>
         </LinearLayout>
 
         <!-- Divider -->
-        <View
+        <com.google.android.material.divider.MaterialDivider
             android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="12dp"
-            android:background="#E0E0E0"/>
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="12dp"/>
 
         <!-- Session duration -->
         <LinearLayout
@@ -66,7 +63,7 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@android:drawable/ic_menu_recent_history"
-                app:tint="@color/design_default_color_primary"
+                app:tint="?attr/colorPrimary"
                 android:contentDescription="Duration" />
 
             <TextView
@@ -75,7 +72,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:text="50 minutes"
-                android:textSize="14sp"/>
+                android:textAppearance="?attr/textAppearanceBodyMedium"/>
         </LinearLayout>
 
         <!-- Session participants -->
@@ -89,7 +86,7 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@android:drawable/ic_menu_myplaces"
-                app:tint="@color/design_default_color_primary"
+                app:tint="?attr/colorPrimary"
                 android:contentDescription="Participants" />
 
             <TextView
@@ -98,7 +95,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:text="4 participants"
-                android:textSize="14sp"/>
+                android:textAppearance="?attr/textAppearanceBodyMedium"/>
         </LinearLayout>
 
         <!-- Session status -->
@@ -113,8 +110,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Completed"
-                android:textColor="#4CAF50"
-                android:textSize="14sp"
+                android:textColor="?attr/colorPrimary"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
                 android:textStyle="bold"/>
 
             <com.google.android.material.button.MaterialButton
@@ -122,8 +119,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Details"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:textSize="12sp"
+                style="@style/Widget.Material3.Button.TextButton"
                 android:minHeight="36dp"
                 android:paddingVertical="4dp"/>
         </LinearLayout>

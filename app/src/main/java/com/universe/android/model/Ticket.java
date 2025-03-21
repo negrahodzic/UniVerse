@@ -76,20 +76,10 @@ public class Ticket implements Serializable {
         this.pointsPrice = pointsPrice;
     }
 
-    /**
-     * Get total points spent on this ticket
-     */
     public int getTotalPointsSpent() {
         return numberOfTickets * pointsPrice;
     }
 
-    /**
-     * Generate QR code bitmap for this ticket
-     *
-     * @param width  Width of QR code in pixels
-     * @param height Height of QR code in pixels
-     * @return Bitmap containing the QR code
-     */
     public Bitmap getQrCodeBitmap(int width, int height) {
         // Return cached bitmap if available
         if (qrCodeBitmap != null) {

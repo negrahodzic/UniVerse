@@ -16,15 +16,18 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
-            android:elevation="4dp"
-            android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
-            app:title="Ticket Details" />
+            android:elevation="0dp"
+            android:theme="@style/ThemeOverlay.Material3.Dark.ActionBar"
+            app:title="Ticket Details"
+            app:titleTextColor="?attr/colorOnPrimary" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="16dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
@@ -37,8 +40,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="4dp">
+                app:cardCornerRadius="12dp"
+                style="?attr/materialCardViewElevatedStyle">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -50,7 +53,7 @@
                         android:id="@+id/eventTitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="?attr/textAppearanceHeadline5"
+                        android:textAppearance="?attr/textAppearanceTitleLarge"
                         android:textStyle="bold"
                         android:layout_marginBottom="8dp" />
 
@@ -58,7 +61,7 @@
                         android:id="@+id/eventDate"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="?attr/textAppearanceBody1"
+                        android:textAppearance="?attr/textAppearanceBodyLarge"
                         android:drawableStart="@android:drawable/ic_menu_my_calendar"
                         android:drawablePadding="8dp"
                         android:layout_marginBottom="8dp" />
@@ -67,15 +70,14 @@
                         android:id="@+id/eventLocation"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="?attr/textAppearanceBody1"
+                        android:textAppearance="?attr/textAppearanceBodyLarge"
                         android:drawableStart="@android:drawable/ic_menu_mylocation"
                         android:drawablePadding="8dp"
                         android:layout_marginBottom="8dp" />
 
-                    <View
+                    <com.google.android.material.divider.MaterialDivider
                         android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="?android:attr/listDivider"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:layout_marginBottom="8dp" />
 
@@ -90,14 +92,14 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Ticket ID"
-                            android:textAppearance="?attr/textAppearanceBody2"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
                             android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/ticketId"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textAppearance="?attr/textAppearanceBody2"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
                             android:fontFamily="monospace" />
 
                     </LinearLayout>
@@ -113,14 +115,14 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Purchase Date"
-                            android:textAppearance="?attr/textAppearanceBody2"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
                             android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/purchaseDate"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textAppearance="?attr/textAppearanceBody2" />
+                            android:textAppearance="?attr/textAppearanceBodyMedium" />
 
                     </LinearLayout>
 
@@ -136,14 +138,14 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Ticket Quantity"
-                            android:textAppearance="?attr/textAppearanceBody2"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
                             android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/ticketQuantity"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textAppearance="?attr/textAppearanceBody2" />
+                            android:textAppearance="?attr/textAppearanceBodyMedium" />
 
                     </LinearLayout>
 
@@ -159,14 +161,14 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Points Spent"
-                            android:textAppearance="?attr/textAppearanceBody2"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
                             android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/pointsSpent"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textAppearance="?attr/textAppearanceBody2" />
+                            android:textAppearance="?attr/textAppearanceBodyMedium" />
 
                     </LinearLayout>
 
@@ -175,7 +177,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="end"
-                        android:layout_marginBottom="8dp" />
+                        android:layout_marginTop="4dp" />
 
                 </LinearLayout>
 
@@ -184,8 +186,9 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="4dp">
+                app:cardCornerRadius="12dp"
+                style="?attr/materialCardViewOutlinedStyle"
+                android:layout_marginBottom="16dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -198,7 +201,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Scan this QR code at the event"
-                        android:textAppearance="?attr/textAppearanceSubtitle1"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
                         android:gravity="center"
                         android:layout_marginBottom="16dp" />
 
@@ -206,13 +209,14 @@
                         android:id="@+id/qrCodeImage"
                         android:layout_width="250dp"
                         android:layout_height="250dp"
-                        android:layout_marginBottom="16dp" />
+                        android:layout_marginBottom="16dp"
+                        android:contentDescription="QR Code" />
 
                     <TextView
                         android:id="@+id/verificationCode"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textAppearance="?attr/textAppearanceBody1"
+                        android:textAppearance="?attr/textAppearanceBodyLarge"
                         android:fontFamily="monospace"
                         android:textStyle="bold"
                         android:layout_marginBottom="8dp" />
@@ -221,7 +225,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="If QR scanning is not available, show this code"
-                        android:textAppearance="?attr/textAppearanceCaption"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         android:gravity="center" />
 
                 </LinearLayout>
@@ -232,7 +237,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginTop="24dp">
+                android:layout_marginTop="8dp">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/shareButton"
@@ -242,7 +247,7 @@
                     android:layout_marginEnd="8dp"
                     android:text="Share Ticket"
                     app:icon="@android:drawable/ic_menu_share"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/addToCalendarButton"
@@ -252,7 +257,7 @@
                     android:layout_marginStart="8dp"
                     android:text="Add to Calendar"
                     app:icon="@android:drawable/ic_menu_my_calendar"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
 
             </LinearLayout>
 
@@ -263,9 +268,9 @@
                 android:layout_marginTop="8dp"
                 android:text="Get Directions"
                 app:icon="@android:drawable/ic_menu_directions"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+                style="@style/Widget.Material3.Button" />
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

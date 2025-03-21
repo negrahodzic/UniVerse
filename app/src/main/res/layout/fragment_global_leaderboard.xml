@@ -9,6 +9,8 @@
         android:id="@+id/leaderboardRecyclerView"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:paddingBottom="80dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -32,7 +34,7 @@
         android:layout_margin="16dp"
         android:gravity="center"
         android:text="No rankings available at this time"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
+        android:textAppearance="?attr/textAppearanceBodyLarge"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -45,7 +47,7 @@
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
         app:cardCornerRadius="8dp"
-        app:cardElevation="4dp"
+        style="?attr/materialCardViewElevatedStyle"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
@@ -62,7 +64,9 @@
                 android:layout_height="24dp"
                 android:layout_gravity="center_vertical"
                 android:layout_marginStart="8dp"
-                android:src="@drawable/ic_launcher_foreground"/>
+                android:scaleType="centerCrop"
+                android:background="@drawable/circle_background"
+                android:contentDescription="User rank icon"/>
 
             <TextView
                 android:id="@+id/userRankText"
@@ -71,7 +75,7 @@
                 android:layout_gravity="center_vertical"
                 android:layout_marginStart="8dp"
                 android:text="Your rank: #42"
-                android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
+                android:textAppearance="?attr/textAppearanceBodyLarge"
                 android:textStyle="bold" />
 
             <TextView
@@ -82,11 +86,11 @@
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
                 android:text="1,245 points"
-                android:textAppearance="@style/TextAppearance.MaterialComponents.Body2" />
+                android:textAppearance="?attr/textAppearanceBodyMedium" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/scrollToUserButton"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
+                style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Find Me" />

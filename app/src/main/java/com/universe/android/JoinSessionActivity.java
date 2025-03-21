@@ -17,6 +17,7 @@ import com.universe.android.model.StudySession;
 import com.universe.android.model.User;
 import com.universe.android.repository.SessionRepository;
 import com.universe.android.repository.UserRepository;
+import com.universe.android.util.ThemeManager;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,6 +43,12 @@ public class JoinSessionActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply organisation theme
+        String orgId = ThemeManager.getCurrentOrg(this);
+        if (!orgId.isEmpty()) {
+            ThemeManager.applyOrganisationTheme(this, orgId);
+        }
+
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_join_session);
@@ -81,6 +88,12 @@ public class JoinSessionActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setTitle("Join Session");
+        }
+
+        // Add organisation logo to toolbar
+        String orgId = ThemeManager.getCurrentOrg(this);
+        if (!orgId.isEmpty()) {
+            ThemeManager.addLogoToToolbar(this, toolbar, orgId);
         }
 
         joinButton.setOnClickListener(v -> joinSession());

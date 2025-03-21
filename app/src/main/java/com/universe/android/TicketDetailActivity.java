@@ -22,6 +22,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.universe.android.model.Event;
 import com.universe.android.model.Ticket;
+import com.universe.android.util.ThemeManager;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -55,6 +56,12 @@ public class TicketDetailActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply organisation theme
+        String orgId = ThemeManager.getCurrentOrg(this);
+        if (!orgId.isEmpty()) {
+            ThemeManager.applyOrganisationTheme(this, orgId);
+        }
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ticket_detail);
 
@@ -83,6 +90,12 @@ public class TicketDetailActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setTitle("Ticket: " + ticket.getEvent().getTitle());
+        }
+
+        // Add organisation logo to toolbar
+        String orgId = ThemeManager.getCurrentOrg(this);
+        if (!orgId.isEmpty()) {
+            ThemeManager.addLogoToToolbar(this, toolbar, orgId);
         }
 
         // Find views

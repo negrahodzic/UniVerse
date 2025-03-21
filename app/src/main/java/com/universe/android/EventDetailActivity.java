@@ -27,6 +27,7 @@ import com.universe.android.manager.UserManager;
 import com.universe.android.model.Event;
 import com.universe.android.model.Ticket;
 import com.universe.android.service.EventService;
+import com.universe.android.util.ThemeManager;
 
 public class EventDetailActivity extends AppCompatActivity implements OnMapReadyCallback {
     private static final String TAG = "EventDetailActivity";
@@ -56,6 +57,12 @@ public class EventDetailActivity extends AppCompatActivity implements OnMapReady
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply organisation theme
+        String orgId = ThemeManager.getCurrentOrg(this);
+        if (!orgId.isEmpty()) {
+            ThemeManager.applyOrganisationTheme(this, orgId);
+        }
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event_detail);
 
@@ -95,6 +102,12 @@ public class EventDetailActivity extends AppCompatActivity implements OnMapReady
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setTitle(event.getTitle());
+        }
+
+        // Add organisation logo to toolbar
+        String orgId = ThemeManager.getCurrentOrg(this);
+        if (!orgId.isEmpty()) {
+            ThemeManager.addLogoToToolbar(this, toolbar, orgId);
         }
 
         // Find views

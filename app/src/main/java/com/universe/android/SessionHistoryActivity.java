@@ -8,11 +8,18 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.universe.android.fragment.SessionHistoryFragment;
+import com.universe.android.util.ThemeManager;
 
 public class SessionHistoryActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply organisation theme
+        String orgId = ThemeManager.getCurrentOrg(this);
+        if (!orgId.isEmpty()) {
+            ThemeManager.applyOrganisationTheme(this, orgId);
+        }
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_fragment_container);
 
@@ -22,6 +29,11 @@ public class SessionHistoryActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setTitle("Study History");
+        }
+
+        // Add organisation logo to toolbar
+        if (!orgId.isEmpty()) {
+            ThemeManager.addLogoToToolbar(this, toolbar, orgId);
         }
 
         // Initialize the SessionHistoryFragment

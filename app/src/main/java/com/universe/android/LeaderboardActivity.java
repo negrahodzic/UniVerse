@@ -5,14 +5,13 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.viewpager2.widget.ViewPager2;
 
-import com.google.android.material.appbar.MaterialToolbar;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.universe.android.adapter.LeaderboardPagerAdapter;
 import com.universe.android.util.NavigationHelper;
+import com.universe.android.util.ThemeManager;
 
 public class LeaderboardActivity extends AppCompatActivity {
 
@@ -20,32 +19,26 @@ public class LeaderboardActivity extends AppCompatActivity {
     private TabLayout tabLayout;
     private MaterialButtonToggleGroup filterToggleGroup;
     private MaterialButton btnFilterPoints;
-    private MaterialButton btnFilterHours;
-    private MaterialButton btnFilterStreak;
 
     private LeaderboardPagerAdapter pagerAdapter;
     private String currentDisplayMode = "points"; // Default display mode
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply organisation theme
+        String orgId = ThemeManager.getCurrentOrg(this);
+        if (!orgId.isEmpty()) {
+            ThemeManager.applyOrganisationTheme(this, orgId);
+        }
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_leaderboard);
 
         // Initialize views
-        MaterialToolbar toolbar = findViewById(R.id.toolbar);
         viewPager = findViewById(R.id.viewPager);
         tabLayout = findViewById(R.id.tabLayout);
         filterToggleGroup = findViewById(R.id.filterToggleGroup);
         btnFilterPoints = findViewById(R.id.btnFilterPoints);
-        btnFilterHours = findViewById(R.id.btnFilterHours);
-        btnFilterStreak = findViewById(R.id.btnFilterStreak);
-
-        // Set up toolbar
-        setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("Leaderboards");
-        }
 
         // Setup ViewPager
         pagerAdapter = new LeaderboardPagerAdapter(this, currentDisplayMode);
@@ -53,7 +46,7 @@ public class LeaderboardActivity extends AppCompatActivity {
 
         // Connect TabLayout with ViewPager
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
-            tab.setText(position == 0 ? "Global" : "Friends");
+            tab.setText(position == 0 ? "Global rank" : "Friends");
         }).attach();
 
         // Set up filter toggle group

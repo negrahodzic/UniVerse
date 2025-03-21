@@ -2,13 +2,14 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp"
-    app:strokeWidth="2dp"
-    app:strokeColor="@android:color/holo_green_light">
+    app:cardCornerRadius="12dp"
+    app:cardElevation="1dp"
+    style="?attr/materialCardViewOutlinedStyle"
+    app:strokeWidth="2dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -20,24 +21,27 @@
             android:id="@+id/eventTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textAppearance="?attr/textAppearanceHeadline6"
+            android:textAppearance="?attr/textAppearanceTitleLarge"
             android:maxLines="1"
-            android:ellipsize="end"/>
+            android:ellipsize="end"
+            tools:text="Event Title"/>
 
         <TextView
             android:id="@+id/eventDate"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:textAppearance="?attr/textAppearanceBody2"/>
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            tools:text="March 21, 2025"/>
 
         <TextView
             android:id="@+id/ticketId"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:textAppearance="?attr/textAppearanceBody2"
-            android:fontFamily="monospace"/>
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:fontFamily="monospace"
+            tools:text="TICKET-12345"/>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -49,7 +53,8 @@
                 android:id="@+id/qrCode"
                 android:layout_width="100dp"
                 android:layout_height="100dp"
-                android:layout_gravity="center_vertical"/>
+                android:layout_gravity="center_vertical"
+                android:contentDescription="Ticket QR code"/>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -62,13 +67,24 @@
                     android:id="@+id/statusChip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"/>
+                    android:layout_marginBottom="8dp"
+                    tools:text="Valid"/>
+
+                <TextView
+                    android:id="@+id/ticketQuantity"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:visibility="gone"
+                    tools:visibility="visible"
+                    tools:text="Quantity: 2"/>
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Tap to view ticket details"
-                    android:textStyle="italic"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
                     android:layout_marginTop="8dp"/>
 
             </LinearLayout>

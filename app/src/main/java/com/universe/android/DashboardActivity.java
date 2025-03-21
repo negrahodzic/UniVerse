@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
@@ -25,6 +26,7 @@ import com.universe.android.model.Event;
 import com.universe.android.model.StudySession;
 import com.universe.android.model.User;
 import com.universe.android.util.StatsHelper;
+import com.universe.android.util.ThemeManager;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,7 +45,7 @@ public class DashboardActivity extends AppCompatActivity implements SessionHisto
     // Session views
     private RecyclerView recentSessionsList;
     private TextView noSessionsText;
-    private TextView viewAllSessionsButton;
+    private MaterialButton viewAllSessionsButton;
 
     // Adapters
     private SessionHistoryAdapter sessionAdapter;
@@ -56,6 +58,12 @@ public class DashboardActivity extends AppCompatActivity implements SessionHisto
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply organisation theme
+        String orgId = ThemeManager.getCurrentOrg(this);
+        if (!orgId.isEmpty()) {
+            ThemeManager.applyOrganisationTheme(this, orgId);
+        }
+
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_dashboard);
@@ -69,6 +77,12 @@ public class DashboardActivity extends AppCompatActivity implements SessionHisto
         initializeViews();
         setupAdapters();
 
+        // Add organisation logo to toolbar
+        String orgId2 = ThemeManager.getCurrentOrg(this);
+        if (!orgId2.isEmpty()) {
+            ThemeManager.addLogoToToolbar(this, findViewById(R.id.toolbar), orgId2);
+        }
+
         // Load user data
         loadUserData();
 
@@ -78,7 +92,6 @@ public class DashboardActivity extends AppCompatActivity implements SessionHisto
         // Load recent sessions
         loadRecentSessions();
     }
-
     private void initializeViews() {
         // User stats views
         pointsText = findViewById(R.id.pointsText);
@@ -379,5 +392,4 @@ public class DashboardActivity extends AppCompatActivity implements SessionHisto
         loadUserData();
         loadRecentSessions();
     }
-
 }
